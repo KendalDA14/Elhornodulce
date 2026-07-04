@@ -2,10 +2,24 @@ import { NextResponse } from "next/server";
 import { assertSameOrigin, hashPassword } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 
+async function readBody(request: Request) {
+  const contentType = request.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return request.json();
+  }
+
+  const formData = await request.formData();
+  return {
+    name: formData.get("name"),
+    password: formData.get("password"),
+    confirm: formData.get("confirm"),
+  };
+}
+
 export async function POST(request: Request) {
   try {
     await assertSameOrigin();
-    const body = await request.json();
+    const body = await readBody(request);
     const name = String(body.name || "").trim();
     const password = String(body.password || "");
     const confirm = String(body.confirm || "");

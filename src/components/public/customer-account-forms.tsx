@@ -47,7 +47,12 @@ export function RegisterCustomerForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm">
+    <form
+      action="/api/auth/register"
+      method="post"
+      onSubmit={handleSubmit}
+      className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm"
+    >
       <div className="flex flex-col items-center text-center">
         <Image
           src="/brand/logo.jpeg"
@@ -117,7 +122,12 @@ export function LoginCustomerForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm">
+    <form
+      action="/api/auth/login"
+      method="post"
+      onSubmit={handleSubmit}
+      className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm"
+    >
       <div className="flex flex-col items-center text-center">
         <Image
           src="/brand/logo.jpeg"

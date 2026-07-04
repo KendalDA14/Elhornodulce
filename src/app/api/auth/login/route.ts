@@ -10,10 +10,23 @@ import {
 import { getPrisma } from "@/lib/prisma";
 import { flushPendingAdminPushNotifications } from "@/lib/push";
 
+async function readBody(request: Request) {
+  const contentType = request.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return request.json();
+  }
+
+  const formData = await request.formData();
+  return {
+    identifier: formData.get("identifier"),
+    password: formData.get("password"),
+  };
+}
+
 export async function POST(request: Request) {
   try {
     await assertSameOrigin();
-    const body = await request.json();
+    const body = await readBody(request);
     const identifier = String(body.identifier || "").trim();
     const password = String(body.password || "");
 
