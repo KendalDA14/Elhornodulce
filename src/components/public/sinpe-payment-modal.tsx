@@ -3,10 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { CheckCircle2, Clock, Upload } from "lucide-react";
-import {
-  createSinpeOrderWhatsappAction,
-  createSinpeOrderWithProofAction,
-} from "@/actions/public";
 import type { CheckoutDraft } from "@/components/public/checkout-client";
 import { currency } from "@/lib/format";
 import { whatsappUrl } from "@/lib/settings";
@@ -113,8 +109,17 @@ export function SinpePaymentModal({
 
     setMessage("");
     appendDraft(formData, draft);
+    formData.set("intent", "sinpe-proof");
     startTransition(async () => {
-      const result = await createSinpeOrderWithProofAction(formData);
+      const response = await fetch("/api/checkout/order", {
+        method: "POST",
+        body: formData,
+      });
+      const result = (await response.json()) as {
+        ok: boolean;
+        message: string;
+        data?: CreatedOrder;
+      };
       setMessage(result.message);
       if (result.ok && result.data) finish(result.data, result.message);
     });
@@ -128,8 +133,17 @@ export function SinpePaymentModal({
 
     const formData = new FormData();
     appendDraft(formData, draft);
+    formData.set("intent", "sinpe-whatsapp");
     startTransition(async () => {
-      const result = await createSinpeOrderWhatsappAction(formData);
+      const response = await fetch("/api/checkout/order", {
+        method: "POST",
+        body: formData,
+      });
+      const result = (await response.json()) as {
+        ok: boolean;
+        message: string;
+        data?: CreatedOrder;
+      };
       setMessage(result.message);
       if (result.ok && result.data) {
         window.open(

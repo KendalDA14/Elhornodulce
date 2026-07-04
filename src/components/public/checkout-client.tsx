@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { MessageCircle, TicketPercent, UserCircle } from "lucide-react";
-import { createOrderAction, previewCheckoutTotalsAction } from "@/actions/public";
+import { previewCheckoutTotalsAction } from "@/actions/public";
 import { currency } from "@/lib/format";
 import { useCart } from "@/components/public/cart-provider";
 import { SinpePaymentModal } from "@/components/public/sinpe-payment-modal";
@@ -138,9 +138,18 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
 
     const cashFormData = new FormData();
     appendDraft(cashFormData, draft, "CASH");
+    cashFormData.set("intent", "cash");
 
     startTransition(async () => {
-      const result = await createOrderAction(cashFormData);
+      const response = await fetch("/api/checkout/order", {
+        method: "POST",
+        body: cashFormData,
+      });
+      const result = (await response.json()) as {
+        ok: boolean;
+        message: string;
+        data?: CreatedOrder;
+      };
       setMessage(result.message);
       if (result.ok && result.data) {
         setCreatedOrder(result.data);
