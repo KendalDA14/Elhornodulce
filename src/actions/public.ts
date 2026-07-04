@@ -115,11 +115,21 @@ async function getCheckoutTotals(formData: FormData) {
     };
   });
 
+  let totals;
+  try {
+    totals = calculateOrderTotals(parsed.data.items, pricedProducts);
+  } catch (error) {
+    return {
+      ok: false as const,
+      message: error instanceof Error ? error.message : "No se pudo calcular el pedido.",
+    };
+  }
+
   return {
     ok: true as const,
     data: {
       checkout: parsed.data,
-      totals: calculateOrderTotals(parsed.data.items, pricedProducts),
+      totals,
       appliedCode: codePromotion?.code || null,
       codeScope: codePromotion ? promotionScopeLabel(codePromotion) : null,
       codeEligibleProductCount: codeEligibleProducts.length,
