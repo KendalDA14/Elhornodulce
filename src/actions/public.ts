@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { assertSameOrigin, getCustomerSession } from "@/lib/auth";
 import { uploadBlobFile } from "@/lib/blob";
@@ -34,6 +35,10 @@ type CreatedOrderData = {
   paymentMethod: "SINPE" | "CASH";
   customerName: string;
 };
+
+function dbId(prefix: string) {
+  return `${prefix}_${randomUUID()}`;
+}
 
 function isAcceptedImage(file: File) {
   const safeName = file.name.toLowerCase();
@@ -156,48 +161,58 @@ async function createConfirmedOrder(
     const settings = sinpeSettings();
     const customer = await getCustomerSession();
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: number,
-        customerName: parsed.customerName,
-        customerPhone: parsed.customerPhone,
-        customerEmail: null,
-        customerId: customer?.id || null,
-        deliveryNotes: parsed.deliveryNotes || null,
-        subtotal: totals.subtotal,
-        discountTotal: totals.discountTotal,
-        total: totals.total,
-        paymentMethod: parsed.paymentMethod,
-        paymentStatus: parsed.paymentMethod === "SINPE" ? "EN_VALIDACION" : "PENDING",
-        orderStatus: "NEW",
-        items: {
-          create: totals.lines.map((line) => ({
-            productId: line.productId,
-            productName: line.productName,
-            imageUrl: line.imageUrl,
-            estimatedDelivery: line.estimatedDelivery,
-            reviewCode: shortCode(),
-            unitPrice: line.unitPrice,
-            quantity: line.quantity,
-            lineTotal: line.lineTotal,
-          })),
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
+        data: {
+          id: dbId("order"),
+          orderNumber: number,
+          customerName: parsed.customerName,
+          customerPhone: parsed.customerPhone,
+          customerEmail: null,
+          customerId: customer?.id || null,
+          deliveryNotes: parsed.deliveryNotes || null,
+          subtotal: totals.subtotal,
+          discountTotal: totals.discountTotal,
+          total: totals.total,
+          paymentMethod: parsed.paymentMethod,
+          paymentStatus: parsed.paymentMethod === "SINPE" ? "EN_VALIDACION" : "PENDING",
+          orderStatus: "NEW",
         },
-        sinpeProof:
-          parsed.paymentMethod === "SINPE"
-            ? {
-                create: {
-                  holderName: settings.holder,
-                  sinpeNumber: settings.number,
-                  expectedAmount: totals.total,
-                  proofUrl: options?.proof?.url || null,
-                  proofPath: options?.proof?.path || null,
-                  uploadedAt: options?.proof ? new Date() : null,
-                  sentByWhatsapp: Boolean(options?.sentByWhatsapp),
-                  whatsappSentAt: options?.sentByWhatsapp ? new Date() : null,
-                },
-              }
-            : undefined,
-      },
+      });
+
+      await tx.orderItem.createMany({
+        data: totals.lines.map((line) => ({
+          id: dbId("item"),
+          orderId: createdOrder.id,
+          productId: line.productId,
+          productName: line.productName,
+          imageUrl: line.imageUrl,
+          estimatedDelivery: line.estimatedDelivery,
+          reviewCode: shortCode(),
+          unitPrice: line.unitPrice,
+          quantity: line.quantity,
+          lineTotal: line.lineTotal,
+        })),
+      });
+
+      if (parsed.paymentMethod === "SINPE") {
+        await tx.sinpePaymentProof.create({
+          data: {
+            id: dbId("proof"),
+            orderId: createdOrder.id,
+            holderName: settings.holder,
+            sinpeNumber: settings.number,
+            expectedAmount: totals.total,
+            proofUrl: options?.proof?.url || null,
+            proofPath: options?.proof?.path || null,
+            uploadedAt: options?.proof ? new Date() : null,
+            sentByWhatsapp: Boolean(options?.sentByWhatsapp),
+            whatsappSentAt: options?.sentByWhatsapp ? new Date() : null,
+          },
+        });
+      }
+
+      return createdOrder;
     });
 
     revalidatePath("/admin/pedidos");
