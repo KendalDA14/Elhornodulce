@@ -63,6 +63,8 @@ model AdminUser {
   pushSubscriptions PushSubscription[]
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+
+  @@map("adminuser")
 }
 
 model PushSubscription {
@@ -77,6 +79,7 @@ model PushSubscription {
   updatedAt DateTime  @updatedAt
 
   @@index([adminId])
+  @@map("pushsubscription")
 }
 
 model AdminNotification {
@@ -90,6 +93,7 @@ model AdminNotification {
   createdAt   DateTime  @default(now())
 
   @@index([deliveredAt, createdAt])
+  @@map("adminnotification")
 }
 
 model Category {
@@ -103,6 +107,8 @@ model Category {
   promotions  Promotion[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@map("category")
 }
 
 model Product {
@@ -135,6 +141,7 @@ model Product {
 
   @@index([categoryId])
   @@index([isActive, isAvailable])
+  @@map("product")
 }
 
 model ProductImage {
@@ -150,6 +157,7 @@ model ProductImage {
 
   @@index([productId])
   @@index([isPrimary])
+  @@map("productimage")
 }
 
 model Ingredient {
@@ -165,6 +173,8 @@ model Ingredient {
   productionCostItems  ProductCostItem[]
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
+
+  @@map("ingredient")
 }
 
 model IngredientPurchase {
@@ -179,6 +189,7 @@ model IngredientPurchase {
   notes         String?    @db.Text
 
   @@index([ingredientId])
+  @@map("ingredientpurchase")
 }
 
 model Recipe {
@@ -189,6 +200,8 @@ model Recipe {
   ingredients RecipeIngredient[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+
+  @@map("recipe")
 }
 
 model RecipeIngredient {
@@ -203,6 +216,7 @@ model RecipeIngredient {
 
   @@index([recipeId])
   @@index([ingredientId])
+  @@map("recipeingredient")
 }
 
 model ProductCostBatch {
@@ -223,6 +237,7 @@ model ProductCostBatch {
 
   @@index([productId])
   @@index([createdAt])
+  @@map("productcostbatch")
 }
 
 model ProductCostItem {
@@ -239,6 +254,7 @@ model ProductCostItem {
 
   @@index([batchId])
   @@index([ingredientId])
+  @@map("productcostitem")
 }
 
 model Promotion {
@@ -258,6 +274,7 @@ model Promotion {
   updatedAt  DateTime      @updatedAt
 
   @@index([isActive, startsAt, endsAt])
+  @@map("promotion")
 }
 
 model Order {
@@ -284,6 +301,7 @@ model Order {
 
   @@index([createdAt])
   @@index([paymentStatus])
+  @@map("order")
 }
 
 model OrderAdjustment {
@@ -297,6 +315,7 @@ model OrderAdjustment {
 
   @@index([orderId])
   @@index([type])
+  @@map("orderadjustment")
 }
 
 model SiteSettings {
@@ -309,6 +328,8 @@ model SiteSettings {
   heroNotice         String   @db.Text
   refundPolicy       String   @db.Text
   updatedAt          DateTime @updatedAt
+
+  @@map("sitesettings")
 }
 
 model OrderItem {
@@ -327,6 +348,7 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+  @@map("orderitem")
 }
 
 model ProductRating {
@@ -341,6 +363,7 @@ model ProductRating {
   createdAt    DateTime @default(now())
 
   @@index([productId])
+  @@map("productrating")
 }
 
 model CustomerUser {
@@ -350,6 +373,8 @@ model CustomerUser {
   orders       Order[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@map("customeruser")
 }
 
 model SinpePaymentProof {
@@ -368,6 +393,8 @@ model SinpePaymentProof {
   reviewedById    String?
   reviewedBy      AdminUser? @relation("ProofReviewer", fields: [reviewedById], references: [id])
   rejectionReason String?    @db.Text
+
+  @@map("sinpepaymentproof")
 }
 
 model Review {
@@ -382,6 +409,7 @@ model Review {
   updatedAt    DateTime     @updatedAt
 
   @@index([status])
+  @@map("review")
 }
 
 model CustomDessertRequest {
@@ -403,4 +431,5 @@ model CustomDessertRequest {
   updatedAt     DateTime            @updatedAt
 
   @@index([status])
+  @@map("customdessertrequest")
 }
