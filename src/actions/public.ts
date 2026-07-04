@@ -230,7 +230,8 @@ async function createConfirmedOrder(
         customerName: parsed.customerName,
       },
     };
-  } catch {
+  } catch (error) {
+    console.error("[checkout/create-order]", error);
     return {
       ok: false,
       message: "No se pudo crear el pedido.",
