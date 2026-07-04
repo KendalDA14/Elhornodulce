@@ -2,12 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
-import { loginUnifiedAction } from "@/actions/auth";
-import {
-  registerCustomerAction,
-  submitProductRatingAction,
-} from "@/actions/customer";
+import { FormEvent, useActionState, useState } from "react";
+import { submitProductRatingAction } from "@/actions/customer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,17 +12,42 @@ import { Textarea } from "@/components/ui/textarea";
 
 const initialState = { ok: false, message: "" };
 
-export function RegisterCustomerForm() {
-  const [state, action, pending] = useActionState(registerCustomerAction, initialState);
+type FormMessage = {
+  ok: boolean;
+  message: string;
+};
 
-  useEffect(() => {
-    if (!state.ok) return;
-    const timeout = window.setTimeout(() => window.location.assign("/login"), 1800);
-    return () => window.clearTimeout(timeout);
-  }, [state.ok, state.message]);
+export function RegisterCustomerForm() {
+  const [state, setState] = useState<FormMessage>(initialState);
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setState(initialState);
+
+    const formData = new FormData(event.currentTarget);
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formData.get("name"),
+        password: formData.get("password"),
+        confirm: formData.get("confirm"),
+      }),
+    });
+    const result = (await response.json()) as FormMessage;
+
+    setState(result);
+    setPending(false);
+
+    if (result.ok) {
+      window.setTimeout(() => window.location.assign("/login"), 1800);
+    }
+  }
 
   return (
-    <form action={action} className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm">
+    <form onSubmit={handleSubmit} className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm">
       <div className="flex flex-col items-center text-center">
         <Image
           src="/brand/logo.jpeg"
@@ -66,10 +87,37 @@ export function RegisterCustomerForm() {
 }
 
 export function LoginCustomerForm() {
-  const [state, action, pending] = useActionState(loginUnifiedAction, {});
+  const [state, setState] = useState<{ error?: string }>({});
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setState({});
+
+    const formData = new FormData(event.currentTarget);
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        identifier: formData.get("identifier"),
+        password: formData.get("password"),
+      }),
+    });
+    const result = (await response.json()) as { ok: boolean; message?: string; redirectTo?: string };
+
+    setPending(false);
+
+    if (result.ok && result.redirectTo) {
+      window.location.assign(result.redirectTo);
+      return;
+    }
+
+    setState({ error: result.message || "No se pudo iniciar sesión." });
+  }
 
   return (
-    <form action={action} className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm">
+    <form onSubmit={handleSubmit} className="grid gap-5 rounded-lg border bg-card p-6 shadow-sm">
       <div className="flex flex-col items-center text-center">
         <Image
           src="/brand/logo.jpeg"
