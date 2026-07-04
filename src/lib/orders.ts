@@ -53,7 +53,6 @@ export function calculateOrderTotals(
 export async function nextOrderNumber() {
   const prisma = getPrisma();
   const numericOrders = await prisma.order.findMany({
-    where: { orderNumber: { not: { startsWith: "HD-" } } },
     select: { orderNumber: true },
   });
   const maxNumber = numericOrders.reduce((max, order) => {
