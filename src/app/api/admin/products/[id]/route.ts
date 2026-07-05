@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { updateProductAction } from "@/actions/admin";
+import { assertSameOrigin, getAdminSession } from "@/lib/auth";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    await assertSameOrigin();
+    const admin = await getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ ok: false, message: "Sesión de administrador requerida." }, { status: 401 });
+    }
+
     const { id } = await context.params;
     const formData = await request.formData();
     formData.set("id", id);
