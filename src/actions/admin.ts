@@ -32,6 +32,31 @@ function formDataList(formData: FormData, name: string) {
   return formData.getAll(name).map((value) => String(value || "").trim());
 }
 
+function csvField(formData: FormData, name: string) {
+  return String(formData.get(name) || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function orderedNewUploads(
+  uploads: { url: string; path: string }[],
+  imageOrder: string[],
+  newImageTokens: string[],
+) {
+  if (!uploads.length) return [];
+  if (!imageOrder.length || !newImageTokens.length) return uploads;
+
+  const byToken = new Map(newImageTokens.map((token, index) => [token, uploads[index]]));
+  const ordered = imageOrder
+    .map((token) => (token.startsWith("new:") ? byToken.get(token.slice(4)) : null))
+    .filter((item): item is { url: string; path: string } => Boolean(item));
+  const used = new Set(ordered);
+  const remaining = uploads.filter((upload) => !used.has(upload));
+
+  return [...ordered, ...remaining];
+}
+
 async function generatePromotionCode() {
   const prisma = getPrisma();
   for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -49,7 +74,7 @@ export async function createCategoryAction(_state: ActionResult, formData: FormD
     name: formData.get("name"),
     description: formData.get("description"),
   });
-  if (!parsed.success) return { ok: false, message: "Categoria invalida." };
+  if (!parsed.success) return { ok: false, message: "Categoría inválida." };
 
   try {
     await getPrisma().category.create({
@@ -61,9 +86,9 @@ export async function createCategoryAction(_state: ActionResult, formData: FormD
     });
     revalidatePath("/admin/categorias");
     revalidatePath("/catalogo");
-    return { ok: true, message: "Categoria creada." };
+    return { ok: true, message: "Categoría creada." };
   } catch {
-    return { ok: false, message: "No se pudo crear la categoria." };
+    return { ok: false, message: "No se pudo crear la categoría." };
   }
 }
 
@@ -75,7 +100,7 @@ export async function updateCategoryAction(_state: ActionResult, formData: FormD
     description: formData.get("description"),
     isActive: formData.get("isActive") === "true",
   });
-  if (!parsed.success || !parsed.data.id) return { ok: false, message: "Categoria invalida." };
+  if (!parsed.success || !parsed.data.id) return { ok: false, message: "Categoría inválida." };
 
   try {
     await getPrisma().category.update({
@@ -90,9 +115,9 @@ export async function updateCategoryAction(_state: ActionResult, formData: FormD
     revalidatePath("/admin/categorias");
     revalidatePath("/");
     revalidatePath("/catalogo");
-    return { ok: true, message: "Categoria actualizada." };
+    return { ok: true, message: "Categoría actualizada." };
   } catch {
-    return { ok: false, message: "No se pudo actualizar la categoria." };
+    return { ok: false, message: "No se pudo actualizar la categoría." };
   }
 }
 
@@ -100,30 +125,30 @@ export async function toggleCategoryAction(formData: FormData): Promise<ActionRe
   await requireAdminAction();
   const id = String(formData.get("id") || "");
   const isActive = String(formData.get("isActive")) === "true";
-  if (!id) return { ok: false, message: "Categoria invalida." };
+  if (!id) return { ok: false, message: "Categoría inválida." };
 
   try {
     await getPrisma().category.update({ where: { id }, data: { isActive } });
     revalidatePath("/admin/categorias");
     revalidatePath("/");
     revalidatePath("/catalogo");
-    return { ok: true, message: isActive ? "Categoria activada." : "Categoria desactivada." };
+    return { ok: true, message: isActive ? "Categoría activada." : "Categoría desactivada." };
   } catch {
-    return { ok: false, message: "No se pudo cambiar la categoria." };
+    return { ok: false, message: "No se pudo cambiar la categoría." };
   }
 }
 
 export async function deleteCategoryAction(formData: FormData): Promise<ActionResult> {
   await requireAdminAction();
   const id = String(formData.get("id") || "");
-  if (!id) return { ok: false, message: "Categoria invalida." };
+  if (!id) return { ok: false, message: "Categoría inválida." };
 
   try {
     const category = await getPrisma().category.findUnique({
       where: { id },
       include: { _count: { select: { products: true, promotions: true } } },
     });
-    if (!category) return { ok: false, message: "Categoria no encontrada." };
+    if (!category) return { ok: false, message: "Categoría no encontrada." };
     if (category._count.products > 0 || category._count.promotions > 0) {
       return { ok: false, message: "No se puede eliminar: tiene productos o promociones. Puedes desactivarla." };
     }
@@ -132,9 +157,9 @@ export async function deleteCategoryAction(formData: FormData): Promise<ActionRe
     revalidatePath("/admin/categorias");
     revalidatePath("/");
     revalidatePath("/catalogo");
-    return { ok: true, message: "Categoria eliminada." };
+    return { ok: true, message: "Categoría eliminada." };
   } catch {
-    return { ok: false, message: "No se pudo eliminar la categoria." };
+    return { ok: false, message: "No se pudo eliminar la categoría." };
   }
 }
 
@@ -151,15 +176,21 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
     isActive: boolFromForm(formData.get("isActive")),
     isFeatured: boolFromForm(formData.get("isFeatured")),
   });
-  if (!parsed.success) return { ok: false, message: "Producto invalido." };
+  if (!parsed.success) return { ok: false, message: "Producto inválido." };
 
   try {
     const files = formData.getAll("images").filter((file): file is File => file instanceof File && file.size > 0);
+    const imageOrder = csvField(formData, "imageOrder");
+    const newImageTokens = csvField(formData, "newImageTokens");
     const uploaded = [];
     for (const file of files) {
       uploaded.push(await uploadBlobFile(file, "products"));
     }
-    const cleanUploads = uploaded.filter((item): item is { url: string; path: string } => Boolean(item));
+    const cleanUploads = orderedNewUploads(
+      uploaded.filter((item): item is { url: string; path: string } => Boolean(item)),
+      imageOrder,
+      newImageTokens,
+    );
     const primary = cleanUploads[0] || null;
     const prisma = getPrisma();
 
@@ -196,7 +227,7 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
     revalidatePath("/");
     revalidatePath("/catalogo");
     revalidatePath("/admin/productos");
-    return { ok: true, message: "Producto creado." };
+    return { ok: true, message: "Producto creado correctamente." };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "No se pudo crear el producto." };
   }
@@ -216,11 +247,14 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
     isActive: boolFromForm(formData.get("isActive")),
     isFeatured: boolFromForm(formData.get("isFeatured")),
   });
-  if (!id || !parsed.success) return { ok: false, message: "Producto invalido." };
+  if (!id || !parsed.success) return { ok: false, message: "Producto inválido." };
 
   try {
     const prisma = getPrisma();
     const files = formData.getAll("images").filter((file): file is File => file instanceof File && file.size > 0);
+    const imageOrder = csvField(formData, "imageOrder");
+    const newImageTokens = csvField(formData, "newImageTokens");
+    const removedImageIds = csvField(formData, "removedImageIds");
     const uploaded = [];
     for (const file of files) {
       uploaded.push(await uploadBlobFile(file, "products"));
@@ -248,28 +282,81 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
       include: { images: true },
     });
 
-    if (cleanUploads.length) {
-      const currentCount = product.images.length;
-      await prisma.productImage.createMany({
-        data: cleanUploads.map((item, index) => ({
-          productId: id,
-          url: item.url,
-          path: item.path,
-          alt: parsed.data.name,
-          isPrimary: currentCount === 0 && index === 0,
-          sortOrder: currentCount + index,
-        })),
-      });
-      const primary = cleanUploads[0];
-      if (currentCount === 0 && primary) {
-        await prisma.product.update({ where: { id }, data: { imageUrl: primary.url, imagePath: primary.path } });
+    const existingById = new Map(product.images.map((image) => [image.id, image]));
+    const newByToken = new Map(newImageTokens.map((token, index) => [token, cleanUploads[index]]));
+    const orderedTokens = imageOrder.length
+      ? imageOrder
+      : [
+          ...product.images
+            .filter((image) => !removedImageIds.includes(image.id))
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((image) => `existing:${image.id}`),
+          ...newImageTokens.map((token) => `new:${token}`),
+        ];
+
+    await prisma.$transaction(async (tx) => {
+      if (removedImageIds.length) {
+        await tx.productImage.deleteMany({
+          where: { productId: id, id: { in: removedImageIds } },
+        });
       }
-    }
+
+      let primaryImage: { url: string; path: string | null } | null = null;
+      let sortOrder = 0;
+
+      for (const token of orderedTokens) {
+        if (token.startsWith("existing:")) {
+          const imageId = token.slice(9);
+          const image = existingById.get(imageId);
+          if (!image || removedImageIds.includes(imageId)) continue;
+
+          const isPrimary = sortOrder === 0;
+          await tx.productImage.update({
+            where: { id: imageId },
+            data: {
+              alt: parsed.data.name,
+              isPrimary,
+              sortOrder,
+            },
+          });
+          if (isPrimary) primaryImage = { url: image.url, path: image.path };
+          sortOrder += 1;
+          continue;
+        }
+
+        if (token.startsWith("new:")) {
+          const upload = newByToken.get(token.slice(4));
+          if (!upload) continue;
+
+          const isPrimary = sortOrder === 0;
+          await tx.productImage.create({
+            data: {
+              productId: id,
+              url: upload.url,
+              path: upload.path,
+              alt: parsed.data.name,
+              isPrimary,
+              sortOrder,
+            },
+          });
+          if (isPrimary) primaryImage = { url: upload.url, path: upload.path };
+          sortOrder += 1;
+        }
+      }
+
+      await tx.product.update({
+        where: { id },
+        data: {
+          imageUrl: primaryImage?.url || null,
+          imagePath: primaryImage?.path || null,
+        },
+      });
+    });
 
     revalidatePath("/");
     revalidatePath("/catalogo");
     revalidatePath("/admin/productos");
-    return { ok: true, message: "Producto actualizado." };
+    return { ok: true, message: "Producto actualizado correctamente." };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "No se pudo actualizar el producto." };
   }
@@ -280,7 +367,7 @@ export async function toggleProductAction(formData: FormData): Promise<ActionRes
   const id = String(formData.get("id") || "");
   const field = String(formData.get("field") || "");
   if (!id || !["isActive", "isAvailable"].includes(field)) {
-    return { ok: false, message: "Accion invalida." };
+    return { ok: false, message: "Acción inválida." };
   }
 
   const product = await getPrisma().product.findUnique({ where: { id } });
@@ -306,7 +393,7 @@ export async function toggleProductAction(formData: FormData): Promise<ActionRes
 export async function deleteProductAction(formData: FormData): Promise<ActionResult> {
   await requireAdminAction();
   const id = String(formData.get("id") || "");
-  if (!id) return { ok: false, message: "Producto invalido." };
+  if (!id) return { ok: false, message: "Producto inválido." };
 
   try {
     const prisma = getPrisma();
@@ -335,7 +422,7 @@ export async function createIngredientAction(_state: ActionResult, formData: For
     quantity: formData.get("quantity"),
     notes: formData.get("notes"),
   });
-  if (!parsed.success) return { ok: false, message: "Ingrediente invalido." };
+  if (!parsed.success) return { ok: false, message: "Ingrediente inválido." };
 
   try {
     const costPerUnit = parsed.data.purchasePrice / parsed.data.quantity;
@@ -655,7 +742,7 @@ export async function setPaymentStatusAction(formData: FormData): Promise<Action
   const orderId = String(formData.get("orderId") || "");
   const status = String(formData.get("status") || "");
   if (!orderId || !["PENDING", "EN_VALIDACION", "PROOF_RECEIVED", "PAID", "REJECTED"].includes(status)) {
-    return { ok: false, message: "Accion invalida." };
+    return { ok: false, message: "Acción inválida." };
   }
 
   const prisma = getPrisma();
@@ -718,7 +805,7 @@ export async function setOrderStatusAction(formData: FormData): Promise<ActionRe
   const orderId = String(formData.get("orderId") || "");
   const status = String(formData.get("status") || "");
   if (!orderId || !["NEW", "CONFIRMED", "PREPARING", "READY", "DELIVERED", "CANCELLED"].includes(status)) {
-    return { ok: false, message: "Estado invalido." };
+    return { ok: false, message: "Estado inválido." };
   }
 
   const order = await getPrisma().order.findUnique({ where: { id: orderId } });
@@ -754,7 +841,7 @@ export async function moderateReviewAction(formData: FormData): Promise<ActionRe
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
   if (!id || !["APPROVED", "REJECTED"].includes(status)) {
-    return { ok: false, message: "Accion invalida." };
+    return { ok: false, message: "Acción inválida." };
   }
 
   await getPrisma().review.update({
@@ -807,10 +894,10 @@ export async function createPromotionAction(_state: ActionResult, formData: Form
     const categoryId = parsed.data.scope === "CATEGORY" ? selectedCategoryId : null;
 
     if (parsed.data.scope === "PRODUCT" && !productId) {
-      return { ok: false, message: "Elige el producto al que aplica la promocion." };
+      return { ok: false, message: "Elige el producto al que aplica la promoción." };
     }
     if (parsed.data.scope === "CATEGORY" && !categoryId) {
-      return { ok: false, message: "Elige la categoria a la que aplica la promocion." };
+      return { ok: false, message: "Elige la categoría a la que aplica la promoción." };
     }
     const startsAt = new Date(`${parsed.data.startsAt}T00:00:00`);
     const endsAt = new Date(`${parsed.data.endsAt}T23:59:59`);
@@ -823,7 +910,7 @@ export async function createPromotionAction(_state: ActionResult, formData: Form
       ? normalizePromotionCode(parsed.data.code || "") || await generatePromotionCode()
       : null;
     if (code && (code.length < 4 || code.length > 8)) {
-      return { ok: false, message: "El codigo debe tener de 4 a 8 caracteres." };
+      return { ok: false, message: "El código debe tener de 4 a 8 caracteres." };
     }
 
     await getPrisma().promotion.create({
@@ -844,7 +931,7 @@ export async function createPromotionAction(_state: ActionResult, formData: Form
     revalidatePath("/admin/promociones");
     return { ok: true, message: "Promocion creada." };
   } catch {
-    return { ok: false, message: "No se pudo crear la promocion." };
+    return { ok: false, message: "No se pudo crear la promoción." };
   }
 }
 
@@ -860,7 +947,7 @@ export async function deletePromotionAction(formData: FormData): Promise<ActionR
     revalidatePath("/admin/promociones");
     return { ok: true, message: "Promocion eliminada." };
   } catch {
-    return { ok: false, message: "No se pudo eliminar la promocion." };
+    return { ok: false, message: "No se pudo eliminar la promoción." };
   }
 }
 

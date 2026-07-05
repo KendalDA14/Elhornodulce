@@ -4,7 +4,7 @@ export const paymentMethodSchema = z.enum(["SINPE", "CASH"]);
 
 export const checkoutSchema = z.object({
   customerName: z.string().min(2, "Indica tu nombre."),
-  customerPhone: z.string().min(8, "Indica un telefono valido."),
+  customerPhone: z.string().min(8, "Indica un teléfono válido."),
   deliveryNotes: z.string().optional(),
   promoCode: z.string().optional(),
   paymentMethod: paymentMethodSchema,
@@ -15,7 +15,7 @@ export const checkoutSchema = z.object({
         quantity: z.number().int().positive().max(50),
       }),
     )
-    .min(1, "El carrito esta vacio."),
+    .min(1, "El carrito está vacío."),
 });
 
 export const reviewSchema = z.object({
@@ -28,7 +28,7 @@ export const reviewSchema = z.object({
     ctx.addIssue({
       code: "custom",
       path: ["customerName"],
-      message: "Indica tu nombre o publica como anonimo.",
+      message: "Indica tu nombre o publícalo como anónimo.",
     });
   }
 });

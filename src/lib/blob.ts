@@ -20,7 +20,7 @@ function assertSafeUpload(file: File, prefix: string) {
     throw new Error("El archivo no puede superar 5 MB.");
   }
   if (!file.type.startsWith("image/") || !SAFE_IMAGE_EXTENSIONS.test(file.name)) {
-    throw new Error("Solo se permiten imagenes.");
+    throw new Error("Solo se permiten imágenes.");
   }
 }
 

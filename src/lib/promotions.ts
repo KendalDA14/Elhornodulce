@@ -42,7 +42,7 @@ export function promotionAppliesToProduct(
 
 export function promotionScopeLabel(promotion: PromotionForPricing) {
   if (promotion.productId) return promotion.product?.name || "el producto seleccionado";
-  if (promotion.categoryId) return promotion.category?.name || "la categoria seleccionada";
+  if (promotion.categoryId) return promotion.category?.name || "la categoría seleccionada";
   return "todos los productos";
 }
 

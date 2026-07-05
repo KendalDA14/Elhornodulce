@@ -32,15 +32,15 @@ export default async function CategoriesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold">Categorias</h2>
+        <h2 className="text-2xl font-semibold">Categorías</h2>
         <p className="text-sm text-muted-foreground">
-          Organiza el catalogo. Si una categoria ya tiene productos, puedes desactivarla sin borrar ventas.
+          Organiza el catálogo. Si una categoría ya tiene productos, puedes desactivarla sin borrar ventas.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Crear categoria</CardTitle>
+          <CardTitle>Crear categoría</CardTitle>
         </CardHeader>
         <CardContent>
           <ActionStateForm action={createCategoryAction} className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
@@ -49,7 +49,7 @@ export default async function CategoriesPage() {
               <Input id="name" name="name" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Descripcion</Label>
+              <Label htmlFor="description">Descripción</Label>
               <Input id="description" name="description" />
             </div>
             <Button>Guardar</Button>
@@ -86,7 +86,7 @@ export default async function CategoriesPage() {
                     </InlineActionForm>
                     <InlineActionForm
                       action={deleteCategoryAction}
-                      confirmMessage="Confirmas eliminar esta categoria?"
+                      confirmMessage="¿Confirmas eliminar esta categoría?"
                       className="flex"
                     >
                       <input type="hidden" name="id" value={category.id} />
@@ -105,7 +105,7 @@ export default async function CategoriesPage() {
                     <Input id={`name-${category.id}`} name="name" defaultValue={category.name} required />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor={`description-${category.id}`}>Descripcion</Label>
+                    <Label htmlFor={`description-${category.id}`}>Descripción</Label>
                     <Input id={`description-${category.id}`} name="description" defaultValue={category.description || ""} />
                   </div>
                   <Button variant="secondary">Guardar cambios</Button>
@@ -116,7 +116,7 @@ export default async function CategoriesPage() {
         })}
         {!categories.length ? (
           <Card>
-            <CardContent className="p-5 text-sm text-muted-foreground">Aun no hay categorias.</CardContent>
+            <CardContent className="p-5 text-sm text-muted-foreground">Aún no hay categorías.</CardContent>
           </Card>
         ) : null}
       </div>

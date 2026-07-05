@@ -38,7 +38,7 @@ export function InlineActionForm({
 
     startTransition(async () => {
       const response = await action(new FormData(form));
-      setResult(response || { ok: true, message: "Accion realizada." });
+      setResult(response || { ok: true, message: "Acción realizada." });
       setConfirmOpen(false);
       router.refresh();
     });
@@ -72,7 +72,7 @@ export function InlineActionForm({
             <div className="mb-1 grid h-10 w-10 place-items-center rounded-full bg-destructive/10 text-destructive">
               <AlertTriangle className="h-5 w-5" />
             </div>
-            <DialogTitle>Confirmar accion</DialogTitle>
+            <DialogTitle>Confirmar acción</DialogTitle>
             <DialogDescription>{confirmMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter>

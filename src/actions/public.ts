@@ -94,7 +94,7 @@ async function getCheckoutTotals(formData: FormData) {
   const requestedCode = parsed.data.promoCode?.trim().toUpperCase();
   const codePromotion = requestedCode ? await getActivePromotionByCode(requestedCode) : null;
   if (requestedCode && !codePromotion) {
-    return { ok: false as const, message: "El codigo de descuento no existe o no esta vigente." };
+    return { ok: false as const, message: "El código de descuento no existe o no está vigente." };
   }
   const codeEligibleProducts = codePromotion
     ? products.filter((product) => promotionAppliesToProduct(codePromotion, product))
@@ -102,7 +102,7 @@ async function getCheckoutTotals(formData: FormData) {
   if (codePromotion && !codeEligibleProducts.length) {
     return {
       ok: false as const,
-      message: `Este codigo solo aplica para ${promotionScopeLabel(codePromotion)}.`,
+      message: `Este código solo aplica para ${promotionScopeLabel(codePromotion)}.`,
     };
   }
 
@@ -282,10 +282,10 @@ export async function previewCheckoutTotalsAction(formData: FormData): Promise<A
       ok: true,
       message: priced.data.appliedCode
         ? priced.data.codeUsedProductCount === 0
-          ? `El codigo ${priced.data.appliedCode} es valido para ${priced.data.codeScope}, pero ya hay un mejor descuento activo.`
+          ? `El código ${priced.data.appliedCode} es válido para ${priced.data.codeScope}, pero ya hay un mejor descuento activo.`
           : priced.data.codeEligibleProductCount === priced.data.totals.lines.length
-          ? `Codigo ${priced.data.appliedCode} aplicado.`
-          : `Codigo ${priced.data.appliedCode} aplicado solo para ${priced.data.codeScope}.`
+          ? `Código ${priced.data.appliedCode} aplicado.`
+          : `Código ${priced.data.appliedCode} aplicado solo para ${priced.data.codeScope}.`
         : "Total actualizado.",
       data: {
         subtotal: priced.data.totals.subtotal,
@@ -297,7 +297,7 @@ export async function previewCheckoutTotalsAction(formData: FormData): Promise<A
   } catch {
     return {
       ok: false,
-      message: "No se pudo validar el codigo.",
+      message: "No se pudo validar el código.",
     };
   }
 }

@@ -30,7 +30,7 @@ export default async function PromotionsPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Crear promocion</CardTitle>
+          <CardTitle>Crear promoción</CardTitle>
         </CardHeader>
         <CardContent>
           <ActionStateForm action={createPromotionAction} className="grid gap-4 md:grid-cols-2">
@@ -39,12 +39,12 @@ export default async function PromotionsPage() {
               <Input id="name" name="name" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="code">Codigo opcional</Label>
-              <Input id="code" name="code" placeholder="Se genera si lo dejas vacio" className="uppercase" />
+              <Label htmlFor="code">Código opcional</Label>
+              <Input id="code" name="code" placeholder="Se genera si lo dejas vacío" className="uppercase" />
             </div>
             <label className="flex items-center gap-2 rounded-lg border bg-muted/20 p-3 text-sm md:col-span-2">
               <input type="checkbox" name="useCode" value="true" className="h-4 w-4 accent-primary" />
-              Crear como promocion con codigo. No se mostrara en la barra publica.
+              Crear como promoción con código. No se mostrará en la barra pública.
             </label>
             <div className="grid gap-2">
               <Label htmlFor="value">Descuento (%)</Label>
@@ -74,12 +74,12 @@ export default async function PromotionsPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todos los productos</SelectItem>
-                  <SelectItem value="CATEGORY">Una categoria</SelectItem>
+                  <SelectItem value="CATEGORY">Una categoría</SelectItem>
                   <SelectItem value="PRODUCT">Un producto especifico</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Si eliges todos, aplica a todo el carrito. Si eliges categoria o producto, aplica solo a esos productos.
+                Si eliges todos, aplica a todo el carrito. Si eliges categoría o producto, aplica solo a esos productos.
               </p>
             </div>
             <div className="grid gap-2">
@@ -95,7 +95,7 @@ export default async function PromotionsPage() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Categoria</Label>
+              <Label>Categoría</Label>
               <Select name="categoryId" defaultValue="none">
                 <SelectTrigger><SelectValue placeholder="Ninguna" /></SelectTrigger>
                 <SelectContent>
@@ -107,9 +107,9 @@ export default async function PromotionsPage() {
               </Select>
             </div>
             <p className="text-xs text-muted-foreground md:col-span-2">
-              Para alcance por producto, elige un producto. Para alcance por categoria, elige una categoria. Para todos los productos, deja ambos en ninguno.
+              Para alcance por producto, elige un producto. Para alcance por categoría, elige una categoría. Para todos los productos, deja ambos en ninguno.
             </p>
-            <Button className="md:col-span-2">Guardar promocion</Button>
+            <Button className="md:col-span-2">Guardar promoción</Button>
           </ActionStateForm>
         </CardContent>
       </Card>
@@ -122,7 +122,7 @@ export default async function PromotionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Codigo</TableHead>
+                <TableHead>Código</TableHead>
                 <TableHead>Visibilidad</TableHead>
                 <TableHead>Descuento</TableHead>
                 <TableHead>Alcance</TableHead>
@@ -135,7 +135,7 @@ export default async function PromotionsPage() {
                 <TableRow key={promotion.id}>
                   <TableCell>{promotion.name}</TableCell>
                   <TableCell>{promotion.code || "-"}</TableCell>
-                  <TableCell>{promotion.code ? "Oculta con codigo" : "Visible en web"}</TableCell>
+                  <TableCell>{promotion.code ? "Oculta con código" : "Visible en web"}</TableCell>
                   <TableCell>{String(promotion.value)}%</TableCell>
                   <TableCell>{promotion.product?.name || promotion.category?.name || "Todos los productos"}</TableCell>
                   <TableCell>

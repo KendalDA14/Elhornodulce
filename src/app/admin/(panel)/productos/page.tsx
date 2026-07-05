@@ -3,6 +3,7 @@ import { Edit, Plus, Power, Store, Trash2 } from "lucide-react";
 import { deleteProductAction, toggleProductAction } from "@/actions/admin";
 import { getAdminLists } from "@/lib/data";
 import { currency, toNumber } from "@/lib/format";
+import { AdminFlashMessage } from "@/components/admin/admin-flash-message";
 import { InlineActionForm } from "@/components/admin/inline-action-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export default async function ProductsPage() {
         <div>
           <h2 className="text-2xl font-semibold">Productos</h2>
           <p className="text-sm text-muted-foreground">
-            Administra catalogo, precios, disponibilidad e imagenes.
+            Administra catálogo, precios, disponibilidad e imágenes.
           </p>
         </div>
         <Button asChild>
@@ -29,6 +30,8 @@ export default async function ProductsPage() {
           </Link>
         </Button>
       </div>
+
+      <AdminFlashMessage />
 
       <div className="grid gap-4">
         {products.map((product) => (
@@ -61,7 +64,7 @@ export default async function ProductsPage() {
                 <div className="mt-3 flex flex-wrap gap-4 text-sm">
                   <span className="font-medium">{currency(toNumber(product.priceFinal))}</span>
                   <span className="text-muted-foreground">Entrega: {product.estimatedDelivery}</span>
-                  <span className="text-muted-foreground">Imagenes: {product.images.length}</span>
+                  <span className="text-muted-foreground">Imágenes: {product.images.length}</span>
                 </div>
               </div>
 
@@ -80,7 +83,11 @@ export default async function ProductsPage() {
                     {product.isAvailable ? "Marcar agotado" : "Marcar disponible"}
                   </Button>
                 </InlineActionForm>
-                <InlineActionForm action={deleteProductAction} className="flex flex-wrap justify-end gap-2">
+                <InlineActionForm
+                  action={deleteProductAction}
+                  className="flex flex-wrap justify-end gap-2"
+                  confirmMessage={`¿Eliminar "${product.name}"? Esta acción no se puede deshacer si el producto no tiene ventas.`}
+                >
                   <input type="hidden" name="id" value={product.id} />
                   <Button size="sm" variant="destructive">
                     <Trash2 className="mr-2 h-4 w-4" />

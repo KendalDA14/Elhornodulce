@@ -16,7 +16,7 @@ export default async function NewProductPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Crear producto</h2>
-          <p className="text-sm text-muted-foreground">Completa la informacion publica del postre.</p>
+          <p className="text-sm text-muted-foreground">Completa la información pública del postre.</p>
         </div>
         <Button asChild variant="outline">
           <Link href="/admin/productos">Volver a productos</Link>

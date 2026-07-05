@@ -31,7 +31,11 @@ export function TimedMessage({
   return (
     <p
       aria-live="polite"
-      className={`${ok ? "text-emerald-700" : "text-destructive"} text-sm ${className}`}
+      className={`rounded-lg border px-3 py-2 text-sm font-medium shadow-sm ${
+        ok
+          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border-destructive/30 bg-destructive/10 text-destructive"
+      } ${className}`}
     >
       {message}
     </p>

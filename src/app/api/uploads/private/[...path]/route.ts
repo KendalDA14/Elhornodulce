@@ -22,13 +22,13 @@ export async function GET(
   const { path: parts } = await context.params;
   const safeParts = parts.filter((part) => /^[a-zA-Z0-9._-]+$/.test(part));
   if (safeParts.length !== parts.length) {
-    return NextResponse.json({ error: "Archivo invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Archivo inválido." }, { status: 400 });
   }
 
   const root = path.resolve(process.cwd(), "private_uploads");
   const filePath = path.resolve(root, ...safeParts);
   if (!filePath.startsWith(root)) {
-    return NextResponse.json({ error: "Archivo invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Archivo inválido." }, { status: 400 });
   }
 
   try {

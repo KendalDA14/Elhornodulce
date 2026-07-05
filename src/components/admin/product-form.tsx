@@ -1,7 +1,6 @@
 import type { Product, ProductImage, Category } from "@/generated/prisma/client";
-import { createProductAction, updateProductAction } from "@/actions/admin";
 import { toNumber } from "@/lib/format";
-import { ActionStateForm } from "@/components/admin/action-state-form";
+import { ApiStateForm } from "@/components/admin/action-state-form";
 import { ProductImagePicker } from "@/components/admin/product-image-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +27,11 @@ export function ProductForm({
         <CardTitle>{isEditing ? "Editar producto" : "Crear producto"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ActionStateForm action={isEditing ? updateProductAction : createProductAction} className="grid gap-6">
+        <ApiStateForm
+          endpoint={isEditing && product ? `/api/admin/products/${product.id}` : "/api/admin/products"}
+          redirectTo="/admin/productos"
+          className="grid gap-6"
+        >
           {product ? <input type="hidden" name="id" value={product.id} /> : null}
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -37,10 +40,10 @@ export function ProductForm({
               <Input id="name" name="name" defaultValue={product?.name || ""} required />
             </div>
             <div className="grid gap-2">
-              <Label>Categoria</Label>
+              <Label>Categoría</Label>
               <Select name="categoryId" defaultValue={product?.categoryId} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una categoria" />
+                  <SelectValue placeholder="Selecciona una categoría" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
@@ -54,7 +57,7 @@ export function ProductForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="description">Descripcion</Label>
+            <Label htmlFor="description">Descripción</Label>
             <Textarea id="description" name="description" defaultValue={product?.description || ""} required />
           </div>
 
@@ -64,7 +67,7 @@ export function ProductForm({
               id="visibleIngredients"
               name="visibleIngredients"
               defaultValue={product?.visibleIngredients || ""}
-              placeholder="Ingredientes que vera el cliente"
+              placeholder="Ingredientes que verá el cliente"
             />
           </div>
 
@@ -89,7 +92,9 @@ export function ProductForm({
                 required
               />
             </div>
-            <ProductImagePicker currentImages={product?.images || []} isEditing={isEditing} />
+            <div className="lg:col-span-3">
+              <ProductImagePicker currentImages={product?.images || []} isEditing={isEditing} />
+            </div>
           </div>
 
           <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 sm:grid-cols-3">
@@ -110,7 +115,7 @@ export function ProductForm({
           <div className="flex justify-end">
             <Button>{isEditing ? "Guardar cambios" : "Guardar producto"}</Button>
           </div>
-        </ActionStateForm>
+        </ApiStateForm>
       </CardContent>
     </Card>
   );

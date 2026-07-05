@@ -180,7 +180,7 @@ function RejectedCustomRequestCard({ request }: { request: CustomRequest }) {
           ) : null}
         </div>
         <p className="rounded-lg bg-background/70 p-3 text-sm text-muted-foreground">
-          Esta solicitud fue rechazada y ya no muestra acciones de aceptacion.
+          Esta solicitud fue rechazada y ya no muestra acciones de aceptación.
         </p>
       </CardContent>
     </Card>
@@ -653,7 +653,7 @@ export default async function OrdersPage({
                   ) : null}
                 </div>
                 <p className="rounded-lg bg-background/70 p-3 text-sm text-muted-foreground">
-                  Esta solicitud fue rechazada y ya no muestra acciones de aceptacion.
+                  Esta solicitud fue rechazada y ya no muestra acciones de aceptación.
                 </p>
               </div>
             ))}
