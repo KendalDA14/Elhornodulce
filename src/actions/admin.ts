@@ -344,6 +344,15 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
         }
       }
 
+      if (!primaryImage) {
+        const fallback = product.images
+          .filter((image) => !removedImageIds.includes(image.id))
+          .sort((a, b) => a.sortOrder - b.sortOrder)[0];
+        if (fallback) {
+          primaryImage = { url: fallback.url, path: fallback.path };
+        }
+      }
+
       await tx.product.update({
         where: { id },
         data: {
