@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowRight, CakeSlice, HeartHandshake, Star } from "lucide-react";
 import { getApprovedReviews, getFeaturedProducts, getSiteSettings, getStarProduct } from "@/lib/data";
 import { currency } from "@/lib/format";
@@ -31,6 +31,9 @@ export default async function HomePage() {
             data-hero-image
             src={heroImageUrl}
             alt={settings.heroTitle}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
             className="absolute inset-0 h-[115%] w-full object-cover"
           />
         ) : null}
@@ -147,3 +150,4 @@ export default async function HomePage() {
     </>
   );
 }
+
