@@ -50,7 +50,7 @@ export function ApiStateForm({
 
         const form = event.currentTarget;
         setPending(true);
-        setState({ ok: false, message: "" });
+        setState({ ok: true, message: "Guardando..." });
 
         try {
           const response = await fetch(endpoint, {

@@ -57,6 +57,26 @@ function orderedNewUploads(
   return [...ordered, ...remaining];
 }
 
+async function uniqueProductSlug(name: string, excludeId?: string) {
+  const prisma = getPrisma();
+  const baseSlug = slugify(name) || "producto";
+
+  for (let suffix = 0; suffix < 100; suffix += 1) {
+    const candidate = suffix === 0 ? baseSlug : `${baseSlug}-${suffix + 1}`;
+    const existing = await prisma.product.findFirst({
+      where: {
+        slug: candidate,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (!existing) return candidate;
+  }
+
+  return `${baseSlug}-${Date.now().toString(36)}`;
+}
+
 async function generatePromotionCode() {
   const prisma = getPrisma();
   for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -179,20 +199,18 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
   if (!parsed.success) return { ok: false, message: "Producto inválido." };
 
   try {
+    const prisma = getPrisma();
+    const slug = await uniqueProductSlug(parsed.data.name);
     const files = formData.getAll("images").filter((file): file is File => file instanceof File && file.size > 0);
     const imageOrder = csvField(formData, "imageOrder");
     const newImageTokens = csvField(formData, "newImageTokens");
-    const uploaded = [];
-    for (const file of files) {
-      uploaded.push(await uploadBlobFile(file, "products"));
-    }
+    const uploaded = await Promise.all(files.map((file) => uploadBlobFile(file, "products")));
     const cleanUploads = orderedNewUploads(
       uploaded.filter((item): item is { url: string; path: string } => Boolean(item)),
       imageOrder,
       newImageTokens,
     );
     const primary = cleanUploads[0] || null;
-    const prisma = getPrisma();
 
     if (parsed.data.isFeatured) {
       await prisma.product.updateMany({ data: { isFeatured: false } });
@@ -201,7 +219,7 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
     await prisma.product.create({
       data: {
         name: parsed.data.name,
-        slug: slugify(parsed.data.name),
+        slug,
         categoryId: parsed.data.categoryId,
         description: parsed.data.description,
         visibleIngredients: parsed.data.visibleIngredients || null,
@@ -251,14 +269,12 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
 
   try {
     const prisma = getPrisma();
+    const slug = await uniqueProductSlug(parsed.data.name, id);
     const files = formData.getAll("images").filter((file): file is File => file instanceof File && file.size > 0);
     const imageOrder = csvField(formData, "imageOrder");
     const newImageTokens = csvField(formData, "newImageTokens");
     const removedImageIds = csvField(formData, "removedImageIds");
-    const uploaded = [];
-    for (const file of files) {
-      uploaded.push(await uploadBlobFile(file, "products"));
-    }
+    const uploaded = await Promise.all(files.map((file) => uploadBlobFile(file, "products")));
     const cleanUploads = uploaded.filter((item): item is { url: string; path: string } => Boolean(item));
 
     if (parsed.data.isFeatured) {
@@ -269,7 +285,7 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
       where: { id },
       data: {
         name: parsed.data.name,
-        slug: slugify(parsed.data.name),
+        slug,
         categoryId: parsed.data.categoryId,
         description: parsed.data.description,
         visibleIngredients: parsed.data.visibleIngredients || null,
