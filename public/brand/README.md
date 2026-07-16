@@ -1,7 +1,3 @@
-Coloca aqui el logo real enviado por el emprendimiento con este nombre:
-
-logo.png
-
-La web usa `/brand/logo.png` como fuente del logo. No se incluye un logo
-generado para evitar reemplazar el arte original.
-
+La web usa el logo real del emprendimiento ubicado en `/brand/logo.jpeg`.
+No reemplazarlo por recursos generados ni cambiar el nombre sin actualizar las
+referencias de la aplicación.

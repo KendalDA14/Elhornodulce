@@ -1,11 +1,4 @@
-import { getPrisma } from "@/lib/prisma";
-import {
-  sampleCategories,
-  sampleDashboardMetrics,
-  sampleProducts,
-  sampleReviews,
-  sampleSalesMetrics,
-} from "@/lib/sample-data";
+﻿import { getPrisma } from "@/lib/prisma";
 import { currency, toNumber } from "@/lib/format";
 import {
   applyBestPromotion,
@@ -20,16 +13,16 @@ import type {
   PublicReview,
 } from "@/types/shop";
 
-export const defaultSiteSettings = {
+const defaultSiteSettings = {
   id: "default",
   heroImageUrl: null as string | null,
   heroImagePath: null as string | null,
-  heroEyebrow: "Horneado por encargo",
+  heroEyebrow: "Postres caseros en Liberia",
   heroTitle: "El horno dulce",
   heroDescription:
     "Postres hechos en lotes pequeños, con catálogo listo para pedir y opciones personalizadas para celebraciones.",
   heroNotice:
-    "Algunos postres pueden estar disponibles para entrega inmediata. Los pedidos por encargo se preparan con tiempo estimado de 24 a 48 horas.",
+    "Algunos postres están disponibles para entrega inmediata. También preparamos pedidos especiales con 24 a 48 horas de anticipación.",
   refundPolicy:
     "Las devoluciones se revisan caso por caso. Si el pedido presenta un problema atribuible a la preparación o entrega coordinada, se puede ofrecer reposición, descuento o devolución parcial según corresponda. Los pedidos personalizados no se cancelan una vez iniciada la preparación.",
 };
@@ -37,7 +30,20 @@ export const defaultSiteSettings = {
 export async function getSiteSettings() {
   try {
     const settings = await getPrisma().siteSettings.findUnique({ where: { id: "default" } });
-    return settings || defaultSiteSettings;
+    if (!settings) return defaultSiteSettings;
+
+    return {
+      ...settings,
+      heroEyebrow:
+        settings.heroEyebrow.trim().toLowerCase() === "horneado por encargo"
+          ? defaultSiteSettings.heroEyebrow
+          : settings.heroEyebrow,
+      heroNotice:
+        settings.heroNotice.trim() ===
+        "Algunos postres pueden estar disponibles para entrega inmediata. Los pedidos por encargo se preparan con tiempo estimado de 24 a 48 horas."
+          ? defaultSiteSettings.heroNotice
+          : settings.heroNotice,
+    };
   } catch {
     return defaultSiteSettings;
   }
@@ -114,9 +120,9 @@ export async function getFeaturedProducts(): Promise<PublicProduct[]> {
     });
 
     const promotions = await getActivePromotions();
-    return products.length ? products.map((product) => publicProduct(product, promotions)) : sampleProducts;
+    return products.map((product) => publicProduct(product, promotions));
   } catch {
-    return sampleProducts;
+    return [];
   }
 }
 
@@ -149,9 +155,9 @@ export async function getCatalog(): Promise<PublicCategory[]> {
         ),
       }));
 
-    return mapped.length ? mapped : sampleCategories;
+    return mapped;
   } catch {
-    return sampleCategories;
+    return [];
   }
 }
 
@@ -163,16 +169,14 @@ export async function getApprovedReviews(): Promise<PublicReview[]> {
       take: 6,
     });
 
-    return reviews.length
-      ? reviews.map((review) => ({
-          id: review.id,
-          customerName: review.isAnonymous ? "Anonimo" : review.customerName || "Anonimo",
-          rating: review.rating,
-          comment: review.comment,
-        }))
-      : sampleReviews;
+    return reviews.map((review) => ({
+      id: review.id,
+      customerName: review.isAnonymous ? "Anonimo" : review.customerName || "Anonimo",
+      rating: review.rating,
+      comment: review.comment,
+    }));
   } catch {
-    return sampleReviews;
+    return [];
   }
 }
 
@@ -189,9 +193,9 @@ export async function getStarProduct(): Promise<PublicProduct | null> {
     });
 
     const promotions = await getActivePromotions();
-    return product ? publicProduct(product, promotions) : sampleProducts.find((item) => item.isFeatured) || sampleProducts[0] || null;
+    return product ? publicProduct(product, promotions) : null;
   } catch {
-    return sampleProducts.find((item) => item.isFeatured) || sampleProducts[0] || null;
+    return null;
   }
 }
 
@@ -254,9 +258,14 @@ export async function getAdminDashboard(): Promise<{
     };
   } catch {
     return {
-      metrics: sampleDashboardMetrics,
-      best: sampleSalesMetrics,
-      slow: sampleSalesMetrics,
+      metrics: [
+        { label: "Ventas totales", value: currency(0), helper: "Sin ventas registradas." },
+        { label: "Ventas del mes", value: currency(0), helper: "Sin ventas registradas este mes." },
+        { label: "Pedidos nuevos", value: "0", helper: "Sin pedidos pendientes." },
+        { label: "Comprobantes pendientes", value: "0", helper: "SINPE manual." },
+      ],
+      best: [],
+      slow: [],
     };
   }
 }

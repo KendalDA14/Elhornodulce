@@ -113,7 +113,7 @@ export function ProductDetailDialog({
             </div>
             <p className="text-sm leading-6 text-muted-foreground">{product.description}</p>
             <div className="rounded-lg border p-4 text-sm">
-              <p className="font-medium">Ingredientes visibles</p>
+              <p className="font-medium">Ingredientes</p>
               <p className="mt-2 text-muted-foreground">
                 {product.visibleIngredients || "Consulta ingredientes especificos por WhatsApp."}
               </p>

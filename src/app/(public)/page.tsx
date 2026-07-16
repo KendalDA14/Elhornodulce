@@ -1,13 +1,21 @@
-﻿import Link from "next/link";
+﻿import Image from "next/image";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { ArrowRight, CakeSlice, HeartHandshake, Star } from "lucide-react";
 import { getApprovedReviews, getFeaturedProducts, getSiteSettings, getStarProduct } from "@/lib/data";
 import { currency } from "@/lib/format";
 import { FeaturedProductFilter } from "@/components/public/featured-product-filter";
+import { RefundPolicyAccordion } from "@/components/public/refund-policy-accordion";
 import { ReviewForm } from "@/components/public/review-form";
 import { StarProductSection } from "@/components/public/star-product-section";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default async function HomePage() {
   const [products, reviews, starProduct, settings] = await Promise.all([
@@ -18,6 +26,9 @@ export default async function HomePage() {
   ]);
   const heroProduct = products[0];
   const heroImageUrl = settings.heroImageUrl || heroProduct?.imageUrl;
+  const lowestPrice = products.length
+    ? Math.min(...products.map((product) => product.priceFinal))
+    : null;
 
   return (
     <>
@@ -52,6 +63,12 @@ export default async function HomePage() {
             <p data-hero className="max-w-xl rounded-lg border bg-white/85 p-3 text-sm font-medium text-rose-900">
               {settings.heroNotice}
             </p>
+            <p data-hero className="inline-flex w-fit max-w-full rounded-full border border-rose-200 bg-rose-50/90 px-3 py-2 text-xs font-semibold text-rose-950 shadow-sm sm:rounded-lg sm:p-3 sm:text-sm">
+              <span className="sm:hidden">Liberia centro: envío gratis</span>
+              <span className="hidden sm:inline">
+                Somos un emprendimiento de Liberia. Envío gratis dentro de Liberia centro.
+              </span>
+            </p>
             <div data-hero className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link href="/catalogo">
@@ -69,8 +86,8 @@ export default async function HomePage() {
       <section className="mx-auto grid max-w-7xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
         {[
           { icon: CakeSlice, title: "Catálogo activo", text: "Productos con disponibilidad clara." },
-          { icon: HeartHandshake, title: "Pagos manuales", text: "SINPE o efectivo, sin tarjetas." },
-          { icon: Star, title: "Reseñas moderadas", text: "Publicadas solo al aprobarse." },
+          { icon: HeartHandshake, title: "Pagos simples", text: "SINPE o efectivo, sin tarjetas." },
+          { icon: Star, title: "Reseñas", text: "Opiniones publicadas de nuestros clientes." },
         ].map((item) => (
           <div data-reveal key={item.title} className="rounded-lg border bg-card p-5">
             <item.icon className="h-5 w-5 text-rose-700" />
@@ -78,6 +95,46 @@ export default async function HomePage() {
             <p className="mt-2 text-sm text-muted-foreground">{item.text}</p>
           </div>
         ))}
+      </section>
+
+      <section className="relative overflow-hidden border-y border-rose-100 bg-rose-50/60">
+        <div className="relative mx-auto flex min-h-40 max-w-7xl items-center justify-center px-4 py-7 sm:px-6 md:min-h-52 md:py-9">
+          <div
+            data-decor-left
+            className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 opacity-35 sm:left-10 sm:opacity-60 md:static md:translate-y-0 md:opacity-85"
+            aria-hidden="true"
+          >
+            <Image
+              src="/decor/suspiro-corazones.png"
+              alt=""
+              width={190}
+              height={120}
+              className="h-auto w-24 sm:w-32 lg:w-44"
+            />
+          </div>
+          <div data-reveal className="relative z-10 mx-auto max-w-3xl px-10 text-center sm:px-16 md:px-10">
+            <p className="text-lg font-medium leading-relaxed text-foreground sm:text-2xl">
+              Hecho con amor,
+              <br />
+              <span className="inline-block">ingredientes de calidad y el toque casero</span>
+              <br />
+              <span className="font-semibold text-rose-500">que te encanta.</span>
+            </p>
+          </div>
+          <div
+            data-decor-right
+            className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 opacity-35 sm:right-10 sm:opacity-60 md:static md:translate-y-0 md:opacity-85"
+            aria-hidden="true"
+          >
+            <Image
+              src="/decor/manga-pastelera.png"
+              alt=""
+              width={190}
+              height={120}
+              className="h-auto w-24 sm:w-32 lg:w-44"
+            />
+          </div>
+        </div>
       </section>
 
       <StarProductSection product={starProduct} />
@@ -91,7 +148,7 @@ export default async function HomePage() {
             <h2 className="mt-2 text-3xl font-semibold">Postres destacados</h2>
           </div>
           <p className="text-sm font-medium text-muted-foreground">
-            Desde {currency(Math.min(...products.map((product) => product.priceFinal)))}
+            {lowestPrice ? `Desde ${currency(lowestPrice)}` : "Pronto tendremos productos disponibles."}
           </p>
         </div>
         <div data-reveal>
@@ -105,16 +162,22 @@ export default async function HomePage() {
             <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Reseñas</p>
             <h2 className="mt-2 text-3xl font-semibold">Lo que dicen los clientes</h2>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {reviews.map((review) => (
-                <blockquote key={review.id} className="rounded-lg border bg-card p-5">
-                  <div className="text-sm text-amber-600">
-                    {"★".repeat(review.rating)}
-                    {"☆".repeat(5 - review.rating)}
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{review.comment}</p>
-                  <footer className="mt-4 font-medium">{review.customerName}</footer>
-                </blockquote>
-              ))}
+              {reviews.length ? (
+                reviews.map((review) => (
+                  <blockquote key={review.id} className="rounded-lg border bg-card p-5">
+                    <div className="text-sm text-amber-600">
+                      {"★".repeat(review.rating)}
+                      {"☆".repeat(5 - review.rating)}
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{review.comment}</p>
+                    <footer className="mt-4 font-medium">{review.customerName}</footer>
+                  </blockquote>
+                ))
+              ) : (
+                <div className="rounded-lg border bg-card p-5 text-sm text-muted-foreground sm:col-span-2">
+                  Aún no hay reseñas publicadas.
+                </div>
+              )}
             </div>
           </div>
           <div data-reveal>
@@ -132,22 +195,11 @@ export default async function HomePage() {
               Si algo no sale como esperabas, revisamos el caso con el número de pedido y el comprobante disponible.
             </p>
           </div>
-          <div className="rounded-lg border bg-card p-5 shadow-sm">
-            <div className="grid gap-3 sm:grid-cols-3">
-              {["Revisión del pedido", "Reposición o descuento", "Devolución parcial"].map((item) => (
-                <div key={item} className="rounded-lg bg-muted/40 p-3 text-sm font-medium">
-                  {item}
-                </div>
-              ))}
-            </div>
-            <h3 className="mt-5 font-semibold">Política de devoluciones</h3>
-            <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted-foreground">
-              {settings.refundPolicy}
-            </p>
+          <div className="rounded-xl border bg-card p-3 shadow-sm sm:p-5">
+            <RefundPolicyAccordion refundPolicy={settings.refundPolicy} />
           </div>
         </div>
       </section>
     </>
   );
 }
-

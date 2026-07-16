@@ -27,10 +27,6 @@ export type PromotionPricing = {
   promotionEndsAt: Date | null;
 };
 
-export function isPromotionActive(promotion: PromotionForPricing, now = new Date()) {
-  return promotion.isActive && promotion.startsAt <= now && promotion.endsAt >= now;
-}
-
 export function promotionAppliesToProduct(
   promotion: PromotionForPricing,
   product: { id: string; categoryId: string },

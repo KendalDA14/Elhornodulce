@@ -32,6 +32,8 @@ export function StarProductSection({ product }: { product: PublicProduct | null 
               data-star-image
               src={product.imageUrl}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
               className="h-[115%] w-full object-cover"
             />
           ) : null}
@@ -40,4 +42,3 @@ export function StarProductSection({ product }: { product: PublicProduct | null 
     </section>
   );
 }
-

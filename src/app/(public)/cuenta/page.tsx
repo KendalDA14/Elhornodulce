@@ -20,7 +20,7 @@ export default async function AccountPage() {
 
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const orders = await getPrisma().order.findMany({
-    where: { OR: [{ customerId: customer.id }, { customerName: customer.name }] },
+    where: { customerId: customer.id },
     include: {
       items: true,
       adjustments: { orderBy: { createdAt: "desc" } },

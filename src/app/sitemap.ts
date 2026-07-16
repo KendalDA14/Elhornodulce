@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${process.env.PORT || "3000"}`;
+import { siteUrl } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const updatedAt = new Date();
@@ -23,12 +22,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: updatedAt,
       changeFrequency: "monthly",
       priority: 0.7,
-    },
-    {
-      url: `${siteUrl}/#politicas`,
-      lastModified: updatedAt,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
   ];
 }

@@ -20,14 +20,14 @@ export type PublicProduct = {
   categoryName: string;
 };
 
-export type ProductReviewView = {
+type ProductReviewView = {
   id: string;
   customerName: string;
   rating: number;
   comment: string | null;
 };
 
-export type ProductImageView = {
+type ProductImageView = {
   id: string;
   url: string;
   alt: string | null;

@@ -246,7 +246,7 @@ async function createConfirmedOrder(
       },
     };
   } catch (error) {
-    console.error("[checkout/create-order]", error);
+    console.error("[checkout/create-order]", error instanceof Error ? error.message : "unknown error");
     return {
       ok: false,
       message: "No se pudo crear el pedido.",

@@ -6,7 +6,7 @@ import { uploadBlobFile } from "@/lib/blob";
 import { slugify, toNumber } from "@/lib/format";
 import { nextOrderNumber } from "@/lib/orders";
 import { getPrisma } from "@/lib/prisma";
-import { calculateSuggestedPrice, recipeCost } from "@/lib/pricing";
+import { calculateSuggestedPrice } from "@/lib/pricing";
 import {
   categorySchema,
   customRequestAdminSchema,
@@ -15,7 +15,6 @@ import {
   productSchema,
   productionBatchSchema,
   promotionSchema,
-  recipeIngredientSchema,
   siteSettingsSchema,
 } from "@/lib/validations";
 import type { ActionResult } from "@/actions/public";
@@ -543,71 +542,6 @@ export async function deleteIngredientAction(formData: FormData): Promise<Action
   }
 }
 
-export async function addRecipeIngredientAction(_state: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdminAction();
-  const parsed = recipeIngredientSchema.safeParse({
-    productId: formData.get("productId"),
-    ingredientId: formData.get("ingredientId"),
-    quantity: formData.get("quantity"),
-    unit: formData.get("unit"),
-    desiredMarginPercent: formData.get("desiredMarginPercent") || undefined,
-    desiredProfitAmount: formData.get("desiredProfitAmount") || undefined,
-  });
-  if (!parsed.success) return { ok: false, message: "Linea de receta invalida." };
-
-  try {
-    const prisma = getPrisma();
-    const ingredient = await prisma.ingredient.findUnique({ where: { id: parsed.data.ingredientId } });
-    if (!ingredient) return { ok: false, message: "Ingrediente no encontrado." };
-
-    const recipe = await prisma.recipe.upsert({
-      where: { productId: parsed.data.productId },
-      create: { productId: parsed.data.productId },
-      update: {},
-    });
-
-    await prisma.recipeIngredient.create({
-      data: {
-        recipeId: recipe.id,
-        ingredientId: ingredient.id,
-        quantity: parsed.data.quantity,
-        unit: parsed.data.unit,
-        costAtCalculation: ingredient.costPerUnit,
-      },
-    });
-
-    const lines = await prisma.recipeIngredient.findMany({
-      where: { recipeId: recipe.id },
-      include: { ingredient: true },
-    });
-    const cost = recipeCost(
-      lines.map((line) => ({
-        quantity: toNumber(line.quantity),
-        costPerUnit: toNumber(line.costAtCalculation || line.ingredient.costPerUnit),
-      })),
-    );
-    const margin =
-      typeof parsed.data.desiredMarginPercent === "number" ? parsed.data.desiredMarginPercent : undefined;
-    const profit = typeof parsed.data.desiredProfitAmount === "number" ? parsed.data.desiredProfitAmount : undefined;
-    const suggestedPrice = calculateSuggestedPrice({ cost, marginPercent: margin, profitAmount: profit });
-
-    await prisma.product.update({
-      where: { id: parsed.data.productId },
-      data: {
-        suggestedPrice,
-        desiredMarginPercent: margin,
-        desiredProfitAmount: profit,
-      },
-    });
-
-    revalidatePath("/admin/recetas");
-    revalidatePath("/admin/productos");
-    return { ok: true, message: "Receta actualizada." };
-  } catch {
-    return { ok: false, message: "No se pudo actualizar la receta." };
-  }
-}
-
 export async function createProductionBatchAction(_state: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireAdminAction();
   const parsed = productionBatchSchema.safeParse({
@@ -762,7 +696,7 @@ export async function applyProductionBatchPriceAction(formData: FormData): Promi
   }
 }
 
-export async function setPaymentStatusAction(formData: FormData): Promise<ActionResult> {
+async function setPaymentStatusAction(formData: FormData): Promise<ActionResult> {
   const admin = await requireAdminAction();
   const orderId = String(formData.get("orderId") || "");
   const status = String(formData.get("status") || "");

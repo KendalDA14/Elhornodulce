@@ -9,6 +9,13 @@ const CUSTOMER_COOKIE_NAME = "horno_customer_session";
 const ADMIN_SESSION_SECONDS = 60 * 60 * 24 * 7;
 const CUSTOMER_SESSION_SECONDS = 60 * 60 * 24 * 30;
 
+export class SameOriginError extends Error {
+  constructor(message = "Solicitud no permitida.") {
+    super(message);
+    this.name = "SameOriginError";
+  }
+}
+
 function sessionSecret() {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
@@ -33,17 +40,17 @@ export async function assertSameOrigin() {
 
   const forwardedHost = headerStore.get("x-forwarded-host");
   const host = forwardedHost || headerStore.get("host");
-  if (!host) throw new Error("Solicitud invalida.");
+  if (!host) throw new SameOriginError("Solicitud invalida.");
 
   let originHost = "";
   try {
     originHost = new URL(origin).host;
   } catch {
-    throw new Error("Solicitud invalida.");
+    throw new SameOriginError("Solicitud invalida.");
   }
 
   if (originHost !== host) {
-    throw new Error("Solicitud no permitida.");
+    throw new SameOriginError();
   }
 }
 

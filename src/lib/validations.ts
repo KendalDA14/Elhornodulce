@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const paymentMethodSchema = z.enum(["SINPE", "CASH"]);
+const paymentMethodSchema = z.enum(["SINPE", "CASH"]);
 
 export const checkoutSchema = z.object({
   customerName: z.string().min(2, "Indica tu nombre."),
@@ -66,15 +66,6 @@ export const ingredientSchema = z.object({
   purchasePrice: z.coerce.number().positive(),
   quantity: z.coerce.number().positive(),
   notes: z.string().optional(),
-});
-
-export const recipeIngredientSchema = z.object({
-  productId: z.string().min(1),
-  ingredientId: z.string().min(1),
-  quantity: z.coerce.number().positive(),
-  unit: z.string().min(1),
-  desiredMarginPercent: z.coerce.number().min(0).max(95).optional().or(z.literal("")),
-  desiredProfitAmount: z.coerce.number().min(0).optional().or(z.literal("")),
 });
 
 export const productionBatchSchema = z.object({

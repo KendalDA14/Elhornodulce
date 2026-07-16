@@ -8,7 +8,7 @@ export function sinpeSettings() {
   };
 }
 
-export function whatsappSettings() {
+function whatsappSettings() {
   const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "50670104855";
   return {
     number,

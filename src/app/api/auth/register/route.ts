@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { assertSameOrigin, hashPassword } from "@/lib/auth";
+import { assertSameOrigin, hashPassword, SameOriginError } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { consumeRateLimit, rateLimitKey } from "@/lib/rate-limit";
+
+const REGISTER_WINDOW_MS = 15 * 60 * 1000;
+const MAX_REGISTER_ATTEMPTS = 5;
 
 async function readBody(request: Request) {
   const contentType = request.headers.get("content-type") || "";
@@ -39,6 +43,12 @@ export async function POST(request: Request) {
     if (password !== confirm) {
       return NextResponse.json({ ok: false, message: "Las contraseñas no coinciden." }, { status: 400 });
     }
+    if (!consumeRateLimit(rateLimitKey("register", name), MAX_REGISTER_ATTEMPTS, REGISTER_WINDOW_MS)) {
+      return NextResponse.json(
+        { ok: false, message: "Demasiados intentos de registro. Espera unos minutos e intenta de nuevo." },
+        { status: 429 },
+      );
+    }
 
     await getPrisma().customerUser.create({
       data: { name, passwordHash: await hashPassword(password) },
@@ -49,6 +59,10 @@ export async function POST(request: Request) {
       message: "Te has registrado con éxito. Ahora puedes iniciar sesión.",
     });
   } catch (error) {
+    if (error instanceof SameOriginError) {
+      return NextResponse.json({ ok: false, message: "Solicitud no permitida." }, { status: 403 });
+    }
+
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
     if (code === "P2002") {
       return NextResponse.json(

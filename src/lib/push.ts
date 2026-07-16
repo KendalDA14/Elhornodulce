@@ -25,10 +25,6 @@ function configureWebPush() {
   return true;
 }
 
-export function getVapidPublicKey() {
-  return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
-}
-
 async function deliverAdminPushNotification(notification: {
   id: string;
   title: string;

@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
+import { siteDescription, siteName } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "El horno dulce",
-    short_name: "El horno dulce",
-    description: "Postres caseros hechos con mucho amor.",
+    name: siteName,
+    short_name: siteName,
+    description: siteDescription,
     start_url: "/",
     scope: "/",
     display: "standalone",
@@ -13,21 +14,21 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#c11f62",
     icons: [
       {
-        src: "/icon.jpeg",
-        sizes: "512x512",
-        type: "image/jpeg",
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icon.jpeg",
+        src: "/icon-512.png",
         sizes: "512x512",
-        type: "image/jpeg",
+        type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/brand/logo.jpeg",
+        src: "/icon-512.png",
         sizes: "512x512",
-        type: "image/jpeg",
+        type: "image/png",
         purpose: "any",
       },
     ],

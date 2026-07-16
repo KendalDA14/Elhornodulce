@@ -30,6 +30,7 @@ export default async function PublicLayout({ children }: { children: React.React
               <div className="flex flex-col gap-1">
                 <strong className="text-foreground">El horno dulce</strong>
                 <span>Postres caseros hechos con mucho amor. Gracias por preferirnos.</span>
+                <span>Emprendimiento de Liberia. Envío gratis dentro de Liberia centro.</span>
               </div>
             </div>
           </footer>

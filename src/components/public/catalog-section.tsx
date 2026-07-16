@@ -1,4 +1,4 @@
-import type { PublicCategory, PublicProduct } from "@/types/shop";
+import type { PublicProduct } from "@/types/shop";
 import { MobileProductCarousel } from "@/components/public/mobile-product-carousel";
 import { ProductCard } from "@/components/public/product-card";
 
@@ -12,23 +12,5 @@ export function ProductGrid({ products }: { products: PublicProduct[] }) {
         ))}
       </div>
     </>
-  );
-}
-
-export function CategoryCatalog({ categories }: { categories: PublicCategory[] }) {
-  return (
-    <div className="space-y-12">
-      {categories.map((category) => (
-        <section key={category.id} className="space-y-5">
-          <div>
-            <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">
-              Categoría
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold">{category.name}</h2>
-          </div>
-          <ProductGrid products={category.products} />
-        </section>
-      ))}
-    </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   createSinpeOrderWhatsappAction,
   createSinpeOrderWithProofAction,
 } from "@/actions/public";
+import { SameOriginError } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -28,11 +29,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo crear el pedido.";
-    console.error("[checkout/order]", message);
+    if (error instanceof SameOriginError) {
+      return NextResponse.json({ ok: false, message: "Solicitud no permitida." }, { status: 403 });
+    }
+
+    console.error("[checkout/order]", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json(
-      { ok: false, message },
-      { status: 400 },
+      { ok: false, message: "No se pudo crear el pedido. Inténtalo de nuevo." },
+      { status: 500 },
     );
   }
 }

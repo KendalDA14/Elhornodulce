@@ -46,9 +46,12 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
         (context) => {
           const elements = uniqueVisibleElements(scope.current!);
           const heroItems = gsap.utils.toArray<HTMLElement>("[data-hero]", scope.current!);
+          const decorLeft = gsap.utils.toArray<HTMLElement>("[data-decor-left]", scope.current!);
+          const decorRight = gsap.utils.toArray<HTMLElement>("[data-decor-right]", scope.current!);
+          const decorItems = [...decorLeft, ...decorRight];
 
           if (context.conditions?.reduceMotion) {
-            gsap.set([...elements, ...heroItems], {
+            gsap.set([...elements, ...heroItems, ...decorItems], {
               autoAlpha: 1,
               x: 0,
               y: 0,
@@ -72,6 +75,39 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
               stagger: 0.09,
               ease: "power3.out",
             });
+          }
+
+          if (decorItems.length) {
+            if (decorLeft.length) {
+              gsap.from(decorLeft, {
+                autoAlpha: 0,
+                x: isMobile ? -14 : -24,
+                y: isMobile ? 8 : 0,
+                scale: isMobile ? 0.96 : 0.92,
+                duration: isMobile ? 0.55 : 0.75,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: decorLeft[0].closest("section") || decorLeft[0],
+                  start: "top 88%",
+                  once: true,
+                },
+              });
+            }
+            if (decorRight.length) {
+              gsap.from(decorRight, {
+                autoAlpha: 0,
+                x: isMobile ? 14 : 24,
+                y: isMobile ? 8 : 0,
+                scale: isMobile ? 0.96 : 0.92,
+                duration: isMobile ? 0.55 : 0.75,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: decorRight[0].closest("section") || decorRight[0],
+                  start: "top 88%",
+                  once: true,
+                },
+              });
+            }
           }
 
           if (!elements.length) return;
