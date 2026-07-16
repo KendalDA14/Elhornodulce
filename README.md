@@ -91,7 +91,13 @@ public/uploads    # imágenes públicas de productos
 private_uploads   # comprobantes SINPE y referencias privadas
 ```
 
-Las rutas privadas validan la sesión del administrador. Los uploads aceptan únicamente imágenes permitidas y aplican un límite de 5 MB. En producción, ambas carpetas deben tener permisos de escritura y formar parte de las copias de seguridad.
+En Hostinger, la aplicación detecta el directorio `nodejs` y guarda automáticamente los archivos en `../storage`, fuera de la carpeta reemplazada durante cada despliegue. También puedes definir una ubicación persistente explícita:
+
+```env
+UPLOAD_STORAGE_ROOT="/ruta/persistente/storage"
+```
+
+Las rutas privadas validan la sesión del administrador. Los uploads aceptan únicamente imágenes permitidas y aplican un límite de 5 MB. La carpeta persistente debe tener permisos de escritura y formar parte de las copias de seguridad.
 
 ## Notificaciones
 
@@ -138,6 +144,7 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
 VAPID_PRIVATE_KEY=""
 VAPID_SUBJECT=""
 BLOB_READ_WRITE_TOKEN=""
+UPLOAD_STORAGE_ROOT=""
 ```
 
 `ADMIN_SESSION_SECRET` debe ser aleatorio, privado y tener al menos 32 caracteres. `BLOB_READ_WRITE_TOKEN` es opcional.

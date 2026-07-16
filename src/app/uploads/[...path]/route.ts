@@ -1,26 +1,27 @@
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
 import {
-  getPrivateUploadRoot,
+  getPublicUploadRoot,
   imageContentType,
   resolveUploadPath,
 } from "@/lib/upload-storage";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ path: string[] }> },
 ) {
-  await requireAdmin();
   const { path: parts } = await context.params;
 
   try {
-    const filePath = resolveUploadPath(getPrivateUploadRoot(), parts);
+    const filePath = resolveUploadPath(getPublicUploadRoot(), parts);
     const bytes = await readFile(filePath);
     return new NextResponse(bytes, {
       headers: {
         "Content-Type": imageContentType(filePath),
-        "Cache-Control": "private, no-store",
+        "Cache-Control": "public, max-age=31536000, immutable",
         "X-Content-Type-Options": "nosniff",
       },
     });

@@ -1,6 +1,11 @@
 import { put } from "@vercel/blob";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  getPrivateUploadRoot,
+  getPublicUploadRoot,
+  resolveUploadPath,
+} from "@/lib/upload-storage";
 
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 const SAFE_IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif|avif|heic|heif)$/i;
@@ -33,16 +38,11 @@ export async function uploadBlobFile(file: File, prefix: string) {
   const isPrivate = PRIVATE_PREFIXES.has(prefix);
 
   if (isPrivate || !process.env.BLOB_READ_WRITE_TOKEN) {
-    const uploadRoot = isPrivate
-      ? path.join(process.cwd(), "private_uploads")
-      : path.join(process.cwd(), "public", "uploads");
+    const uploadRoot = isPrivate ? getPrivateUploadRoot() : getPublicUploadRoot();
     const targetDir = path.join(uploadRoot, prefix);
     await mkdir(targetDir, { recursive: true });
     const bytes = Buffer.from(await file.arrayBuffer());
-    const diskPath = path.resolve(uploadRoot, pathname);
-    if (!diskPath.startsWith(path.resolve(uploadRoot))) {
-      throw new Error("Ruta de carga invalida.");
-    }
+    const diskPath = resolveUploadPath(uploadRoot, pathname.split("/"));
     await writeFile(diskPath, bytes);
 
     return {
