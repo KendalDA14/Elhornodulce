@@ -29,7 +29,7 @@ export default async function ReviewsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
-              <TableHead>Calificacion</TableHead>
+              <TableHead>Calificación</TableHead>
               <TableHead>Comentario</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Acciones</TableHead>

@@ -550,7 +550,7 @@ export default async function OrdersPage({
                         <Input id={`price-${request.id}`} name="price" type="number" min="1" required />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Metodo de pago</Label>
+                        <Label>Método de pago</Label>
                         <Select name="paymentMethod" defaultValue="CASH">
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>

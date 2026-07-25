@@ -18,7 +18,10 @@ export function ProductCard({ product }: { product: PublicProduct }) {
   const hasDiscount = Boolean(product.discountPercent && product.originalPrice > product.priceFinal);
 
   return (
-    <article data-no-reveal className="group flex h-full flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md">
+    <article
+      data-no-reveal
+      className="group relative flex h-full flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md"
+    >
       <ProductDetailDialog
         product={product}
         open={detailsOpen}
@@ -26,9 +29,13 @@ export function ProductCard({ product }: { product: PublicProduct }) {
         trigger={
           <button
             type="button"
-            className="flex min-h-0 w-full flex-1 flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-          >
-            <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+            aria-label={`Abrir vista rápida de ${product.name}`}
+            className="absolute inset-0 z-10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          />
+        }
+      />
+      <div className="pointer-events-none flex min-h-0 w-full flex-1 flex-col text-left">
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
               {product.imageUrl ? (
                 <ResponsiveImage
                   src={product.imageUrl}
@@ -41,8 +48,8 @@ export function ProductCard({ product }: { product: PublicProduct }) {
                   Sin imagen
                 </div>
               )}
-            </div>
-            <div className="flex flex-1 flex-col space-y-3 p-4 pb-2">
+        </div>
+        <div className="flex flex-1 flex-col space-y-3 p-4 pb-2">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-muted-foreground">{product.categoryName}</p>
@@ -67,11 +74,9 @@ export function ProductCard({ product }: { product: PublicProduct }) {
               <p className="mt-auto text-sm font-medium text-muted-foreground">
                 {product.estimatedDelivery}
               </p>
-            </div>
-          </button>
-        }
-      />
-      <div className="mt-auto p-4 pt-2">
+        </div>
+      </div>
+      <div className="pointer-events-none relative z-20 mt-auto p-4 pt-2">
         <div className="min-h-12">
           {hasDiscount ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -88,14 +93,11 @@ export function ProductCard({ product }: { product: PublicProduct }) {
             asChild
             size="sm"
             variant="outline"
-            className="w-full rounded-full px-3"
+            className="pointer-events-auto w-full rounded-full px-3"
           >
-            <Link
-              href={`/productos/${product.slug}`}
-              onClick={(event) => event.stopPropagation()}
-            >
+            <Link href={`/productos/${product.slug}`}>
               <Eye className="mr-2 h-4 w-4" />
-              Detalles
+              Ver detalles
             </Link>
           </Button>
           <Button
@@ -103,7 +105,7 @@ export function ProductCard({ product }: { product: PublicProduct }) {
             size="sm"
             disabled={!product.isAvailable}
             onClick={() => addProduct(product)}
-            className="w-full rounded-full px-3"
+            className="pointer-events-auto w-full rounded-full px-3"
           >
             <Plus className="mr-2 h-4 w-4" />
             Agregar

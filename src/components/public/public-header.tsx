@@ -137,7 +137,7 @@ export function PublicHeader({
               </Button>
             </SheetTrigger>
             <SheetContent className="flex h-dvh flex-col overflow-hidden transition duration-300 ease-out">
-              <SheetTitle className="sr-only">Menu principal</SheetTitle>
+              <SheetTitle className="sr-only">Menú principal</SheetTitle>
               <SheetDescription className="sr-only">
                 Navegacion principal de El horno dulce.
               </SheetDescription>

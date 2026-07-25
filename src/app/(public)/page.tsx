@@ -35,7 +35,7 @@ export default async function HomePage() {
     <>
       <section
         data-hero-section
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden border-b"
+        className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b"
       >
         {heroImageUrl ? (
           <ResponsiveImage
@@ -43,12 +43,12 @@ export default async function HomePage() {
             alt={settings.heroTitle}
             priority
             sizes="100vw"
-            className="absolute inset-0 h-[115%] w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.97),rgba(255,255,255,0.82),rgba(255,255,255,0.32))]" />
-        <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center px-5 py-14 sm:px-8 lg:px-12">
-          <div className="max-w-3xl space-y-6">
+        <div className="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-7xl items-center px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
+          <div className="max-w-3xl space-y-4 sm:space-y-6">
             <p data-hero className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-700 sm:text-sm">
               {settings.heroEyebrow}
             </p>
@@ -63,12 +63,12 @@ export default async function HomePage() {
             </p>
             <p
               data-hero
-              className="max-w-2xl rounded-xl border border-rose-200 bg-white/90 px-4 py-4 text-sm font-semibold leading-5 text-rose-950 shadow-sm sm:px-5 sm:leading-6"
+              className="max-w-2xl rounded-lg border border-rose-200 bg-white/92 px-4 py-3 text-sm font-semibold leading-5 text-rose-950 shadow-sm sm:rounded-xl sm:px-5 sm:py-4 sm:leading-6"
             >
               {settings.heroNotice}
               <span className="mt-1 block text-rose-700">Envío gratis en Liberia centro</span>
             </p>
-            <div data-hero className="flex flex-col gap-3 pt-1 sm:flex-row">
+            <div data-hero className="grid grid-cols-1 gap-2 pt-1 min-[390px]:grid-cols-2 sm:flex sm:gap-3">
               <Button asChild size="lg">
                 <Link href="/catalogo">
                   Ver catálogo <ArrowRight className="ml-2 h-4 w-4" />
@@ -156,8 +156,8 @@ export default async function HomePage() {
       </section>
 
       <section id="nosotros" className="scroll-mt-28 border-y bg-card/45">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-14 lg:px-12 lg:py-16">
-          <div data-reveal className="aspect-[16/10] overflow-hidden rounded-lg bg-muted sm:aspect-[4/3] lg:aspect-[16/10]">
+        <div className="mx-auto grid max-w-7xl gap-7 px-5 py-10 sm:px-8 sm:py-12 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-14 lg:px-12 lg:py-16">
+          <div data-reveal className="aspect-video overflow-hidden rounded-lg bg-muted sm:aspect-[4/3] lg:aspect-[16/10]">
             {settings.aboutImageUrl || heroImageUrl ? (
               <ResponsiveImage
                 src={settings.aboutImageUrl || heroImageUrl || ""}
@@ -175,10 +175,10 @@ export default async function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-700 sm:text-sm">
               {settings.aboutEyebrow}
             </p>
-            <h2 className="mt-3 font-serif text-4xl font-semibold leading-tight text-rose-950 sm:text-5xl">
+            <h2 className="mt-3 font-serif text-3xl font-semibold leading-tight text-rose-950 sm:text-5xl">
               {settings.aboutTitle}
             </h2>
-            <p className="mt-5 whitespace-pre-line text-base leading-8 text-muted-foreground">
+            <p className="mt-4 whitespace-pre-line text-base leading-7 text-muted-foreground sm:mt-5 sm:leading-8">
               {settings.aboutDescription}
             </p>
           </div>
@@ -215,16 +215,18 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="devoluciones" className="scroll-mt-28 mx-auto max-w-7xl px-4 py-14 sm:px-6">
-        <div data-reveal className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+      <section id="devoluciones" className="scroll-mt-28 mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+        <div data-reveal className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-10">
           <div>
             <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Políticas</p>
-            <h2 className="mt-2 text-3xl font-semibold">Devoluciones y soluciones</h2>
+            <h2 className="mt-2 font-serif text-3xl font-semibold text-rose-950">
+              Devoluciones y soluciones
+            </h2>
             <p className="mt-4 text-sm leading-7 text-muted-foreground">
               Si algo no sale como esperabas, revisamos el caso con el número de pedido y el comprobante disponible.
             </p>
           </div>
-          <div className="rounded-xl border bg-card p-3 shadow-sm sm:p-5">
+          <div>
             <RefundPolicyAccordion
               reviewText={settings.refundReviewText}
               replacementText={settings.refundReplacementText}

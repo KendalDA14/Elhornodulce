@@ -916,19 +916,19 @@ export async function moderateReviewAction(formData: FormData): Promise<ActionRe
   revalidatePath("/admin/resenas");
   return {
     ok: true,
-    message: status === "APPROVED" ? "Resena aprobada." : "Resena rechazada.",
+    message: status === "APPROVED" ? "Reseña aprobada." : "Reseña rechazada.",
   };
 }
 
 export async function deleteReviewAction(formData: FormData): Promise<ActionResult> {
   await requireAdminAction();
   const id = String(formData.get("id") || "");
-  if (!id) return { ok: false, message: "Resena invalida." };
+  if (!id) return { ok: false, message: "Reseña inválida." };
 
   await getPrisma().review.delete({ where: { id } });
   revalidatePath("/");
   revalidatePath("/admin/resenas");
-  return { ok: true, message: "Resena eliminada." };
+  return { ok: true, message: "Reseña eliminada." };
 }
 
 export async function createPromotionAction(_state: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -945,7 +945,7 @@ export async function createPromotionAction(_state: ActionResult, formData: Form
     productId: formData.get("productId") || undefined,
     categoryId: formData.get("categoryId") || undefined,
   });
-  if (!parsed.success) return { ok: false, message: "Promocion invalida." };
+  if (!parsed.success) return { ok: false, message: "Promoción inválida." };
 
   try {
     const selectedProductId = parsed.data.productId && parsed.data.productId !== "none" ? parsed.data.productId : null;
@@ -989,7 +989,7 @@ export async function createPromotionAction(_state: ActionResult, formData: Form
     revalidatePath("/");
     revalidatePath("/catalogo");
     revalidatePath("/admin/promociones");
-    return { ok: true, message: "Promocion creada." };
+    return { ok: true, message: "Promoción creada." };
   } catch {
     return { ok: false, message: "No se pudo crear la promoción." };
   }
@@ -998,14 +998,14 @@ export async function createPromotionAction(_state: ActionResult, formData: Form
 export async function deletePromotionAction(formData: FormData): Promise<ActionResult> {
   await requireAdminAction();
   const id = String(formData.get("id") || "");
-  if (!id) return { ok: false, message: "Promocion invalida." };
+  if (!id) return { ok: false, message: "Promoción inválida." };
 
   try {
     await getPrisma().promotion.delete({ where: { id } });
     revalidatePath("/");
     revalidatePath("/catalogo");
     revalidatePath("/admin/promociones");
-    return { ok: true, message: "Promocion eliminada." };
+    return { ok: true, message: "Promoción eliminada." };
   } catch {
     return { ok: false, message: "No se pudo eliminar la promoción." };
   }
@@ -1051,7 +1051,7 @@ export async function updateCustomRequestAction(formData: FormData): Promise<Act
     }
     const price = typeof parsed.data.price === "number" ? parsed.data.price : 0;
     if (price <= 0 || !parsed.data.paymentMethod) {
-      return { ok: false, message: "Para aceptar, indica precio y metodo de pago." };
+      return { ok: false, message: "Para aceptar, indica el precio y el método de pago." };
     }
     const paymentMethod = parsed.data.paymentMethod;
 
@@ -1238,7 +1238,7 @@ export async function createOrderAdjustmentAction(formData: FormData): Promise<A
     revalidatePath("/cuenta");
     return {
       ok: true,
-      message: parsed.data.type === "REFUND" ? "Devolucion registrada." : "Descuento registrado.",
+      message: parsed.data.type === "REFUND" ? "Devolución registrada." : "Descuento registrado.",
     };
   } catch {
     return { ok: false, message: "No se pudo registrar el ajuste." };

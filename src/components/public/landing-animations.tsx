@@ -34,12 +34,11 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
     if (!container) return;
 
     let disposed = false;
-    let started = false;
+    let frame = 0;
     let cleanupAnimations: (() => void) | undefined;
 
     const start = async () => {
-      if (started || disposed) return;
-      started = true;
+      if (disposed) return;
 
       const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
         import("gsap"),
@@ -59,13 +58,12 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
           },
           (context) => {
           const elements = uniqueVisibleElements(gsap, container);
-          const heroItems = gsap.utils.toArray<HTMLElement>("[data-hero]", container);
           const decorLeft = gsap.utils.toArray<HTMLElement>("[data-decor-left]", container);
           const decorRight = gsap.utils.toArray<HTMLElement>("[data-decor-right]", container);
           const decorItems = [...decorLeft, ...decorRight];
 
           if (context.conditions?.reduceMotion) {
-            gsap.set([...elements, ...heroItems, ...decorItems], {
+            gsap.set([...elements, ...decorItems], {
               autoAlpha: 1,
               x: 0,
               y: 0,
@@ -78,17 +76,6 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
           const isMobile = Boolean(context.conditions?.mobile);
           const distance = isMobile ? 24 : 38;
           const duration = isMobile ? 0.52 : 0.72;
-
-          if (heroItems.length) {
-            gsap.from(heroItems, {
-              autoAlpha: 0,
-              y: isMobile ? 18 : 28,
-              scale: 0.985,
-              duration: 0.75,
-              stagger: 0.09,
-              ease: "power3.out",
-            });
-          }
 
           if (decorItems.length) {
             if (decorLeft.length) {
@@ -191,20 +178,13 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
       };
     };
 
-    const options: AddEventListenerOptions = { passive: true, once: true };
-    window.addEventListener("scroll", start, options);
-    window.addEventListener("wheel", start, options);
-    window.addEventListener("touchstart", start, options);
-    window.addEventListener("pointerdown", start, options);
-    window.addEventListener("keydown", start, { once: true });
+    frame = window.requestAnimationFrame(() => {
+      void start();
+    });
 
     return () => {
       disposed = true;
-      window.removeEventListener("scroll", start);
-      window.removeEventListener("wheel", start);
-      window.removeEventListener("touchstart", start);
-      window.removeEventListener("pointerdown", start);
-      window.removeEventListener("keydown", start);
+      window.cancelAnimationFrame(frame);
       cleanupAnimations?.();
     };
   }, [pathname]);

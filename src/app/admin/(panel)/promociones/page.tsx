@@ -75,7 +75,7 @@ export default async function PromotionsPage() {
                 <SelectContent>
                   <SelectItem value="ALL">Todos los productos</SelectItem>
                   <SelectItem value="CATEGORY">Una categoría</SelectItem>
-                  <SelectItem value="PRODUCT">Un producto especifico</SelectItem>
+                  <SelectItem value="PRODUCT">Un producto específico</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">

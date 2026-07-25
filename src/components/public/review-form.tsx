@@ -37,9 +37,9 @@ export function ReviewForm() {
         <Input id="customerName" name="customerName" />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="rating">Calificacion con estrellas</Label>
+        <Label htmlFor="rating">Calificación con estrellas</Label>
         <input type="hidden" name="rating" value={rating} />
-        <div className="flex gap-1" role="radiogroup" aria-label="Calificacion">
+        <div className="flex gap-1" role="radiogroup" aria-label="Calificación">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}
@@ -54,7 +54,7 @@ export function ReviewForm() {
         </div>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="comment">Resena</Label>
+        <Label htmlFor="comment">Reseña</Label>
         <Textarea id="comment" name="comment" minLength={10} required />
       </div>
       <TimedMessage message={state.message} ok={state.ok} messageKey={state} />

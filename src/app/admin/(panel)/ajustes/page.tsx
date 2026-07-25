@@ -23,34 +23,35 @@ export default async function AdminSettingsPage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader className="border-b">
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b p-4 sm:p-6">
           <CardTitle>Contenido público</CardTitle>
           <p className="text-sm text-muted-foreground">
             Selecciona una sección para ver solamente sus campos.
           </p>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-3 sm:p-6">
           <ActionStateForm action={updateSiteSettingsAction} className="grid gap-6">
             <Tabs defaultValue="inicio" className="gap-6">
-              <TabsList className="grid h-auto w-full grid-cols-1 gap-2 bg-transparent p-0 sm:grid-cols-3">
+              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-muted/60 p-1 sm:gap-2 sm:bg-transparent sm:p-0">
                 <TabsTrigger
                   value="inicio"
-                  className="h-auto justify-start border bg-background px-4 py-3 data-active:border-primary data-active:bg-primary/5"
+                  className="h-auto min-w-0 flex-col gap-1 border bg-background px-1 py-2 text-xs data-active:border-primary data-active:bg-primary/5 sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-sm"
                 >
                   <Home className="h-4 w-4" />
                   Inicio
                 </TabsTrigger>
                 <TabsTrigger
                   value="historia"
-                  className="h-auto justify-start border bg-background px-4 py-3 data-active:border-primary data-active:bg-primary/5"
+                  className="h-auto min-w-0 flex-col gap-1 border bg-background px-1 py-2 text-xs data-active:border-primary data-active:bg-primary/5 sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-sm"
                 >
                   <Heart className="h-4 w-4" />
-                  Sobre nosotros
+                  <span className="sm:hidden">Nosotros</span>
+                  <span className="hidden sm:inline">Sobre nosotros</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="politicas"
-                  className="h-auto justify-start border bg-background px-4 py-3 data-active:border-primary data-active:bg-primary/5"
+                  className="h-auto min-w-0 flex-col gap-1 border bg-background px-1 py-2 text-xs data-active:border-primary data-active:bg-primary/5 sm:flex-row sm:justify-start sm:px-4 sm:py-3 sm:text-sm"
                 >
                   <ShieldCheck className="h-4 w-4" />
                   Políticas
@@ -70,7 +71,7 @@ export default async function AdminSettingsPage() {
                 </div>
                 <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
                   <div className="space-y-3">
-                    <div className="aspect-[4/3] overflow-hidden rounded-lg border bg-muted">
+                    <div className="aspect-video overflow-hidden rounded-lg border bg-muted sm:aspect-[4/3]">
                       {settings.heroImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={settings.heroImageUrl} alt="Imagen principal" className="h-full w-full object-cover" />
@@ -82,7 +83,7 @@ export default async function AdminSettingsPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="heroImage">Cambiar imagen de fondo</Label>
-                      <Input id="heroImage" name="heroImage" type="file" accept="image/*" />
+                      <Input id="heroImage" name="heroImage" type="file" accept="image/*" className="max-w-full text-xs sm:text-sm" />
                     </div>
                   </div>
 
@@ -125,7 +126,7 @@ export default async function AdminSettingsPage() {
                 </div>
                 <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
                   <div className="space-y-3">
-                    <div className="aspect-[4/3] overflow-hidden rounded-lg border bg-muted">
+                    <div className="aspect-video overflow-hidden rounded-lg border bg-muted sm:aspect-[4/3]">
                       {settings.aboutImageUrl || settings.heroImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -141,7 +142,7 @@ export default async function AdminSettingsPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="aboutImage">Cambiar imagen de la sección</Label>
-                      <Input id="aboutImage" name="aboutImage" type="file" accept="image/*" />
+                      <Input id="aboutImage" name="aboutImage" type="file" accept="image/*" className="max-w-full text-xs sm:text-sm" />
                     </div>
                   </div>
 
@@ -160,7 +161,7 @@ export default async function AdminSettingsPage() {
                         id="aboutDescription"
                         name="aboutDescription"
                         defaultValue={settings.aboutDescription}
-                        className="min-h-36"
+                        className="min-h-28 sm:min-h-36"
                         required
                       />
                     </div>
@@ -186,7 +187,7 @@ export default async function AdminSettingsPage() {
                       id="refundReviewText"
                       name="refundReviewText"
                       defaultValue={settings.refundReviewText}
-                      className="min-h-28"
+                      className="min-h-24 sm:min-h-28"
                       required
                     />
                   </div>
@@ -196,7 +197,7 @@ export default async function AdminSettingsPage() {
                       id="refundReplacementText"
                       name="refundReplacementText"
                       defaultValue={settings.refundReplacementText}
-                      className="min-h-28"
+                      className="min-h-24 sm:min-h-28"
                       required
                     />
                   </div>
@@ -206,7 +207,7 @@ export default async function AdminSettingsPage() {
                       id="refundPartialText"
                       name="refundPartialText"
                       defaultValue={settings.refundPartialText}
-                      className="min-h-28"
+                      className="min-h-24 sm:min-h-28"
                       required
                     />
                   </div>
@@ -217,7 +218,7 @@ export default async function AdminSettingsPage() {
             <input type="hidden" name="refundPolicy" value={settings.refundPolicy} />
 
             <div className="flex justify-end border-t pt-5">
-              <Button>Guardar cambios</Button>
+              <Button className="w-full sm:w-auto">Guardar cambios</Button>
             </div>
           </ActionStateForm>
         </CardContent>

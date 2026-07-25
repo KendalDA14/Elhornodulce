@@ -22,7 +22,7 @@ export function CustomRequestForm() {
         <Input id="customerName" name="customerName" required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="customerPhone">Telefono</Label>
+        <Label htmlFor="customerPhone">Teléfono</Label>
         <Input id="customerPhone" name="customerPhone" required />
       </div>
       <div className="grid gap-2">

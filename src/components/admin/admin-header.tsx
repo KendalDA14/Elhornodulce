@@ -80,7 +80,7 @@ export function AdminHeader({ adminEmail, nav }: { adminEmail: string; nav: Admi
             </Button>
           </SheetTrigger>
           <SheetContent className="flex h-dvh flex-col overflow-hidden transition duration-300 ease-out">
-            <SheetTitle className="sr-only">Menu de administracion</SheetTitle>
+            <SheetTitle className="sr-only">Menú de administración</SheetTitle>
             <SheetDescription className="sr-only">
               Navegacion principal del panel administrativo.
             </SheetDescription>

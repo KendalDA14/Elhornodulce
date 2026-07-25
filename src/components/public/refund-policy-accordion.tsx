@@ -58,7 +58,7 @@ function PolicyContent({
 
   return (
     <div ref={ref} className="h-0 overflow-hidden opacity-0">
-      <div className="mx-3 mb-3 rounded-lg bg-rose-50/70 px-4 py-3 text-sm leading-7 text-muted-foreground">
+      <div className="mx-3 mb-3 rounded-lg bg-rose-50/70 px-3 py-3 text-sm leading-6 text-muted-foreground sm:px-4 sm:leading-7">
         {children}
       </div>
     </div>
@@ -74,7 +74,7 @@ export function RefundPolicyAccordion({
   const texts = [reviewText, replacementText, partialText];
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 rounded-xl border bg-card p-2 shadow-sm sm:p-3">
       {policyItems.map((item, index) => {
         const Icon = item.icon;
         const isOpen = openIndex === index;
@@ -87,7 +87,7 @@ export function RefundPolicyAccordion({
           >
             <button
               type="button"
-              className="flex w-full items-center gap-3 px-3 py-3 text-left sm:px-4"
+              className="flex w-full items-center gap-3 px-3 py-3 text-left sm:px-4 sm:py-3.5"
               aria-expanded={isOpen}
               onClick={() => setOpenIndex(isOpen ? null : index)}
             >
