@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "prisma generate && prisma migrate deploy",
+    "prebuild": "prisma generate && node scripts/prepare-deploy.mjs && prisma migrate deploy",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -26,6 +26,7 @@
     "jose": "6.2.4",
     "lenis": "^1.3.23",
     "lucide-react": "^1.17.0",
+    "mariadb": "3.4.5",
     "next": "16.2.11",
     "radix-ui": "^1.5.0",
     "react": "19.2.8",
