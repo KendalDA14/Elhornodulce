@@ -5,24 +5,23 @@ import gsap from "gsap";
 import { ClipboardCheck, HandCoins, RotateCcw } from "lucide-react";
 
 type RefundPolicyAccordionProps = {
-  refundPolicy: string;
+  reviewText: string;
+  replacementText: string;
+  partialText: string;
 };
 
 const policyItems = [
   {
     title: "Revisión del pedido",
     icon: ClipboardCheck,
-    text: "Revisamos tu número de pedido, comprobante y detalles del caso para entender bien qué ocurrió.",
   },
   {
     title: "Reposición o descuento",
     icon: HandCoins,
-    text: "Si aplica, coordinamos una solución justa: reposición del producto o un descuento compensatorio.",
   },
   {
     title: "Devolución parcial",
     icon: RotateCcw,
-    text: "Cuando sea la mejor opción, valoramos una devolución parcial según el caso y el estado del pedido.",
   },
 ];
 
@@ -66,8 +65,13 @@ function PolicyContent({
   );
 }
 
-export function RefundPolicyAccordion({ refundPolicy }: RefundPolicyAccordionProps) {
+export function RefundPolicyAccordion({
+  reviewText,
+  replacementText,
+  partialText,
+}: RefundPolicyAccordionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const texts = [reviewText, replacementText, partialText];
 
   return (
     <div className="space-y-2">
@@ -98,10 +102,7 @@ export function RefundPolicyAccordion({ refundPolicy }: RefundPolicyAccordionPro
               </span>
             </button>
             <PolicyContent isOpen={isOpen}>
-              <p>{item.text}</p>
-              {index === 2 && refundPolicy ? (
-                <p className="mt-3 whitespace-pre-line">{refundPolicy}</p>
-              ) : null}
+              <p className="whitespace-pre-line">{texts[index]}</p>
             </PolicyContent>
           </div>
         );

@@ -1,19 +1,17 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const revealSelectors = [
   "[data-reveal]",
   "[data-reveal-card]",
 ];
 
-function uniqueVisibleElements(scope: HTMLElement) {
+function uniqueVisibleElements(
+  gsap: typeof import("gsap").default,
+  scope: HTMLElement,
+) {
   const seen = new Set<HTMLElement>();
   return gsap.utils
     .toArray<HTMLElement>(revealSelectors.join(","), scope)
@@ -31,23 +29,39 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
   const scope = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
-  useGSAP(
-    () => {
-      if (!scope.current) return;
+  useEffect(() => {
+    const container = scope.current;
+    if (!container) return;
 
-      const mm = gsap.matchMedia();
+    let disposed = false;
+    let started = false;
+    let cleanupAnimations: (() => void) | undefined;
 
-      mm.add(
-        {
-          reduceMotion: "(prefers-reduced-motion: reduce)",
-          mobile: "(max-width: 767px)",
-          desktop: "(min-width: 768px)",
-        },
-        (context) => {
-          const elements = uniqueVisibleElements(scope.current!);
-          const heroItems = gsap.utils.toArray<HTMLElement>("[data-hero]", scope.current!);
-          const decorLeft = gsap.utils.toArray<HTMLElement>("[data-decor-left]", scope.current!);
-          const decorRight = gsap.utils.toArray<HTMLElement>("[data-decor-right]", scope.current!);
+    const start = async () => {
+      if (started || disposed) return;
+      started = true;
+
+      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
+        import("gsap"),
+        import("gsap/ScrollTrigger"),
+      ]);
+      if (disposed) return;
+
+      gsap.registerPlugin(ScrollTrigger);
+      const animationContext = gsap.context(() => {
+        const mm = gsap.matchMedia();
+
+        mm.add(
+          {
+            reduceMotion: "(prefers-reduced-motion: reduce)",
+            mobile: "(max-width: 767px)",
+            desktop: "(min-width: 768px)",
+          },
+          (context) => {
+          const elements = uniqueVisibleElements(gsap, container);
+          const heroItems = gsap.utils.toArray<HTMLElement>("[data-hero]", container);
+          const decorLeft = gsap.utils.toArray<HTMLElement>("[data-decor-left]", container);
+          const decorRight = gsap.utils.toArray<HTMLElement>("[data-decor-right]", container);
           const decorItems = [...decorLeft, ...decorRight];
 
           if (context.conditions?.reduceMotion) {
@@ -56,8 +70,7 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
               x: 0,
               y: 0,
               scale: 1,
-              filter: "none",
-              clearProps: "transform,filter,opacity,visibility",
+              clearProps: "transform,opacity,visibility",
             });
             return;
           }
@@ -125,7 +138,6 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
               return 0;
             },
             scale: isMobile ? 0.99 : 0.975,
-            filter: isMobile ? "blur(3px)" : "blur(6px)",
           });
 
           ScrollTrigger.batch(elements, {
@@ -139,82 +151,63 @@ export function LandingAnimations({ children }: { children: React.ReactNode }) {
                 x: 0,
                 y: 0,
                 scale: 1,
-                filter: "blur(0px)",
                 duration,
                 stagger: 0.06,
                 ease: "power3.out",
                 overwrite: true,
               });
             },
-            onEnterBack: (batch) => {
-              gsap.to(batch, {
-                autoAlpha: 1,
-                x: 0,
-                y: 0,
-                scale: 1,
-                filter: "blur(0px)",
-                duration: duration * 0.85,
-                stagger: 0.04,
-                ease: "power2.out",
-                overwrite: true,
-              });
-            },
-            onLeave: (batch) => {
-              gsap.to(batch, {
-                autoAlpha: 0,
-                y: -distance * 0.7,
-                scale: 0.99,
-                filter: isMobile ? "blur(2px)" : "blur(4px)",
-                duration: 0.36,
-                stagger: 0.025,
-                ease: "power2.out",
-                overwrite: true,
-              });
-            },
-            onLeaveBack: (batch) => {
-              gsap.to(batch, {
-                autoAlpha: 0,
-                y: distance * 0.7,
-                scale: 0.99,
-                filter: isMobile ? "blur(2px)" : "blur(4px)",
-                duration: 0.34,
-                stagger: 0.025,
-                ease: "power2.out",
-                overwrite: true,
-              });
-            },
+            once: true,
           });
 
-          gsap.utils.toArray<HTMLElement>("[data-star-image], [data-parallax]", scope.current!).forEach((element) => {
-            gsap.to(element, {
-              yPercent: isMobile ? -5 : -11,
-              scale: isMobile ? 1.03 : 1.06,
-              ease: "none",
-              scrollTrigger: {
-                trigger: element.closest("section") || element,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: isMobile ? 0.5 : 1,
-              },
+          if (!isMobile) {
+            gsap.utils.toArray<HTMLElement>("[data-star-image], [data-parallax]", container).forEach((element) => {
+              gsap.to(element, {
+                yPercent: -11,
+                scale: 1.06,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: element.closest("section") || element,
+                  start: "top bottom",
+                  end: "bottom top",
+                  scrub: 1,
+                },
+              });
             });
-          });
+          }
 
           const refresh = () => ScrollTrigger.refresh();
-          const refreshTimeout = window.setTimeout(refresh, 250);
-          window.addEventListener("load", refresh, { once: true });
           document.fonts?.ready.then(refresh).catch(() => undefined);
+          },
+        );
 
-          return () => {
-            window.clearTimeout(refreshTimeout);
-            window.removeEventListener("load", refresh);
-          };
-        },
-      );
+        cleanupAnimations = () => mm.revert();
+      }, container);
 
-      return () => mm.revert();
-    },
-    { scope, dependencies: [pathname], revertOnUpdate: true },
-  );
+      const previousCleanup = cleanupAnimations;
+      cleanupAnimations = () => {
+        previousCleanup?.();
+        animationContext.revert();
+      };
+    };
+
+    const options: AddEventListenerOptions = { passive: true, once: true };
+    window.addEventListener("scroll", start, options);
+    window.addEventListener("wheel", start, options);
+    window.addEventListener("touchstart", start, options);
+    window.addEventListener("pointerdown", start, options);
+    window.addEventListener("keydown", start, { once: true });
+
+    return () => {
+      disposed = true;
+      window.removeEventListener("scroll", start);
+      window.removeEventListener("wheel", start);
+      window.removeEventListener("touchstart", start);
+      window.removeEventListener("pointerdown", start);
+      window.removeEventListener("keydown", start);
+      cleanupAnimations?.();
+    };
+  }, [pathname]);
 
   return <div ref={scope}>{children}</div>;
 }

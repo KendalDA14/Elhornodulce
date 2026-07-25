@@ -1,4 +1,6 @@
 ﻿import { getPrisma } from "@/lib/prisma";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { currency, toNumber } from "@/lib/format";
 import {
   applyBestPromotion,
@@ -23,6 +25,18 @@ const defaultSiteSettings = {
     "Postres hechos en lotes pequeños, con catálogo listo para pedir y opciones personalizadas para celebraciones.",
   heroNotice:
     "Algunos postres están disponibles para entrega inmediata. También preparamos pedidos especiales con 24 a 48 horas de anticipación.",
+  aboutImageUrl: null as string | null,
+  aboutImagePath: null as string | null,
+  aboutEyebrow: "Desde Liberia",
+  aboutTitle: "Postres caseros para compartir",
+  aboutDescription:
+    "El horno dulce nació en Liberia para compartir postres caseros hechos en pequeños lotes. Preparamos por encargo y también ofrecemos opciones listas cuando hay disponibilidad.",
+  refundReviewText:
+    "Revisamos tu número de pedido, comprobante y detalles del caso para entender bien qué ocurrió.",
+  refundReplacementText:
+    "Si aplica, coordinamos una solución justa: reposición del producto o un descuento compensatorio.",
+  refundPartialText:
+    "Cuando sea la mejor opción, valoramos una devolución parcial según el caso y el estado del pedido.",
   refundPolicy:
     "Las devoluciones se revisan caso por caso. Si el pedido presenta un problema atribuible a la preparación o entrega coordinada, se puede ofrecer reposición, descuento o devolución parcial según corresponda. Los pedidos personalizados no se cancelan una vez iniciada la preparación.",
 };
@@ -43,6 +57,14 @@ export async function getSiteSettings() {
         "Algunos postres pueden estar disponibles para entrega inmediata. Los pedidos por encargo se preparan con tiempo estimado de 24 a 48 horas."
           ? defaultSiteSettings.heroNotice
           : settings.heroNotice,
+      aboutEyebrow: settings.aboutEyebrow || defaultSiteSettings.aboutEyebrow,
+      aboutTitle: settings.aboutTitle || defaultSiteSettings.aboutTitle,
+      aboutDescription: settings.aboutDescription || defaultSiteSettings.aboutDescription,
+      refundReviewText: settings.refundReviewText || defaultSiteSettings.refundReviewText,
+      refundReplacementText:
+        settings.refundReplacementText || defaultSiteSettings.refundReplacementText,
+      refundPartialText:
+        settings.refundPartialText || settings.refundPolicy || defaultSiteSettings.refundPartialText,
     };
   } catch {
     return defaultSiteSettings;
@@ -63,7 +85,7 @@ function publicProduct(product: {
   ratings?: { id: string; customerName: string; rating: number; comment: string | null }[];
   priceFinal: unknown;
   isAvailable: boolean;
-  category: { name: string };
+  category: { name: string; slug: string };
 }, promotions: PromotionForPricing[] = []): PublicProduct {
   const images = product.images.length
     ? product.images
@@ -103,6 +125,7 @@ function publicProduct(product: {
     priceFinal: pricing.finalPrice,
     isAvailable: product.isAvailable,
     categoryName: product.category.name,
+    categorySlug: product.category.slug,
   };
 }
 
@@ -113,7 +136,7 @@ export async function getFeaturedProducts(): Promise<PublicProduct[]> {
       include: {
         category: true,
         images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] },
-        ratings: { orderBy: { createdAt: "desc" } },
+        ratings: { orderBy: { createdAt: "desc" }, take: 100 },
       },
       orderBy: { createdAt: "desc" },
       take: 6,
@@ -126,40 +149,118 @@ export async function getFeaturedProducts(): Promise<PublicProduct[]> {
   }
 }
 
-export async function getCatalog(): Promise<PublicCategory[]> {
+export const getCatalogPage = unstable_cache(async function getCatalogPage(
+  page: number,
+  perPage: number,
+) {
   try {
-    const categories = await getPrisma().category.findMany({
-      where: { isActive: true },
+    const prisma = getPrisma();
+    const where = {
+      isActive: true,
+      category: { isActive: true },
+    };
+    const [categories, totalProducts, products, promotions] = await Promise.all([
+      prisma.category.findMany({
+        where: {
+          isActive: true,
+          products: { some: { isActive: true } },
+        },
+        select: { id: true, name: true, slug: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      }),
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] },
+          ratings: { orderBy: { createdAt: "desc" }, take: 100 },
+        },
+        orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      getActivePromotions(),
+    ]);
+
+    return {
+      categories,
+      totalProducts,
+      products: products.map((product) => publicProduct(product, promotions)),
+    };
+  } catch {
+    return { categories: [], totalProducts: 0, products: [] as PublicProduct[] };
+  }
+}, ["public-catalog-page"], { revalidate: 30, tags: ["public-catalog"] });
+
+export const getProductBySlug = cache(async function getProductBySlug(
+  slug: string,
+): Promise<PublicProduct | null> {
+  try {
+    const product = await getPrisma().product.findFirst({
+      where: {
+        slug,
+        isActive: true,
+      },
+      include: {
+        category: true,
+        images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] },
+        ratings: { orderBy: { createdAt: "desc" }, take: 100 },
+      },
+    });
+
+    if (!product) return null;
+
+    const promotions = await getActivePromotions();
+    return publicProduct(product, promotions);
+  } catch {
+    return null;
+  }
+});
+
+export const getCategoryBySlug = cache(async function getCategoryBySlug(
+  slug: string,
+): Promise<PublicCategory | null> {
+  try {
+    const category = await getPrisma().category.findFirst({
+      where: {
+        slug,
+        isActive: true,
+      },
       include: {
         products: {
           where: { isActive: true },
           include: {
             images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] },
-            ratings: { orderBy: { createdAt: "desc" } },
+            ratings: { orderBy: { createdAt: "desc" }, take: 100 },
           },
           orderBy: { name: "asc" },
         },
       },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
 
-    const promotions = await getActivePromotions();
-    const mapped = categories
-      .filter((category) => category.products.length > 0)
-      .map((category) => ({
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        products: category.products.map((product) =>
-          publicProduct({ ...product, category: { name: category.name } }, promotions),
-        ),
-      }));
+    if (!category || category.products.length === 0) return null;
 
-    return mapped;
+    const promotions = await getActivePromotions();
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      products: category.products.map((product) =>
+        publicProduct(
+          {
+            ...product,
+            category: { name: category.name, slug: category.slug },
+          },
+          promotions,
+        ),
+      ),
+    };
   } catch {
-    return [];
+    return null;
   }
-}
+});
 
 export async function getApprovedReviews(): Promise<PublicReview[]> {
   try {
@@ -187,7 +288,7 @@ export async function getStarProduct(): Promise<PublicProduct | null> {
       include: {
         category: true,
         images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] },
-        ratings: { orderBy: { createdAt: "desc" } },
+        ratings: { orderBy: { createdAt: "desc" }, take: 100 },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -270,20 +371,47 @@ export async function getAdminDashboard(): Promise<{
   }
 }
 
-export async function getAdminLists() {
+export async function getAdminProducts() {
+  try {
+    return await getPrisma().product.findMany({
+      include: {
+        category: { select: { name: true } },
+        images: {
+          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+          select: { id: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getAdminIngredients() {
+  try {
+    return await getPrisma().ingredient.findMany({ orderBy: { name: "asc" } });
+  } catch {
+    return [];
+  }
+}
+
+export async function getPromotionOptions() {
   try {
     const prisma = getPrisma();
-    const [categories, products, ingredients] = await Promise.all([
-      prisma.category.findMany({ orderBy: { name: "asc" } }),
-      prisma.product.findMany({
-        include: { category: true, recipe: true, images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] } },
-        orderBy: { createdAt: "desc" },
+    const [categories, products] = await Promise.all([
+      prisma.category.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
       }),
-      prisma.ingredient.findMany({ orderBy: { name: "asc" } }),
+      prisma.product.findMany({
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true },
+      }),
     ]);
 
-    return { categories, products, ingredients };
+    return { categories, products };
   } catch {
-    return { categories: [], products: [], ingredients: [] };
+    return { categories: [], products: [] };
   }
 }

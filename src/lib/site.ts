@@ -1,6 +1,12 @@
-const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${process.env.PORT || "3000"}`;
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-export const siteUrl = new URL(configuredSiteUrl).origin;
+if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
+  throw new Error("NEXT_PUBLIC_SITE_URL es obligatoria en producción.");
+}
+
+export const siteUrl = new URL(
+  configuredSiteUrl || `http://localhost:${process.env.PORT || "3000"}`,
+).origin;
 export const siteName = "El horno dulce";
 export const siteTitle = "El horno dulce | Postres caseros en Liberia";
 export const siteDescription =

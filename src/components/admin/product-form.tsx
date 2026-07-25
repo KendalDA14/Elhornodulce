@@ -1,8 +1,7 @@
 import type { Product, ProductImage, Category } from "@/generated/prisma/client";
 import { toNumber } from "@/lib/format";
-import { ApiStateForm } from "@/components/admin/action-state-form";
+import { ApiStateForm, ApiSubmitButton } from "@/components/admin/action-state-form";
 import { ProductImagePicker } from "@/components/admin/product-image-picker";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -113,7 +112,10 @@ export function ProductForm({
           </div>
 
           <div className="flex justify-end">
-            <Button>{isEditing ? "Guardar cambios" : "Guardar producto"}</Button>
+            <ApiSubmitButton
+              idleLabel={isEditing ? "Guardar cambios" : "Guardar producto"}
+              pendingLabel={isEditing ? "Guardando cambios..." : "Creando producto..."}
+            />
           </div>
         </ApiStateForm>
       </CardContent>

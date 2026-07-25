@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState, useTransition } from "react";
-import { MessageCircle, TicketPercent, UserCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { Banknote, MessageCircle, Smartphone, TicketPercent, Truck, UserCircle } from "lucide-react";
 import { previewCheckoutTotalsAction } from "@/actions/public";
 import { currency } from "@/lib/format";
 import { useCart } from "@/components/public/cart-provider";
+import { OrderCelebration } from "@/components/public/order-celebration";
 import { SinpePaymentModal } from "@/components/public/sinpe-payment-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +24,7 @@ type CheckoutClientProps = {
     holder: string;
     instructions: string;
   };
+  whatsappNumber: string;
   initialPayment: "SINPE" | "CASH";
   isLoggedIn: boolean;
 };
@@ -47,7 +50,13 @@ type PendingSinpe = {
   deadlineAt: number;
 };
 
-export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutClientProps) {
+export function CheckoutClient({
+  sinpe,
+  whatsappNumber,
+  initialPayment,
+  isLoggedIn,
+}: CheckoutClientProps) {
+  const router = useRouter();
   const { items, total, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<"SINPE" | "CASH">(initialPayment);
   const [message, setMessage] = useState("");
@@ -60,7 +69,17 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
   } | null>(null);
   const [pendingSinpe, setPendingSinpe] = useState<PendingSinpe | null>(null);
   const [sinpeOpen, setSinpeOpen] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!showCelebration) return;
+    const timeout = window.setTimeout(() => {
+      router.push("/");
+      router.refresh();
+    }, 3600);
+    return () => window.clearTimeout(timeout);
+  }, [router, showCelebration]);
 
   const serverItems = useMemo(
     () =>
@@ -88,6 +107,13 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
     formData.set("promoCode", draft.promoCode);
     formData.set("paymentMethod", method);
     formData.set("items", draft.items);
+  }
+
+  function completeOrder(order: CreatedOrder, resultMessage: string) {
+    setCreatedOrder(order);
+    setMessage(resultMessage);
+    clearCart();
+    setShowCelebration(true);
   }
 
   function previewDiscount(form: HTMLFormElement) {
@@ -152,8 +178,7 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
       };
       setMessage(result.message);
       if (result.ok && result.data) {
-        setCreatedOrder(result.data);
-        clearCart();
+        completeOrder(result.data, result.message);
       }
     });
   }
@@ -162,8 +187,8 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
+        <Card data-checkout-form className="order-2 lg:order-1">
           <CardHeader>
             <CardTitle>Datos del pedido</CardTitle>
           </CardHeader>
@@ -205,6 +230,18 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
                     <SelectItem value="CASH">Efectivo</SelectItem>
                   </SelectContent>
                 </Select>
+                <div className="flex gap-3 rounded-lg border border-rose-100 bg-rose-50/60 p-3 text-sm text-muted-foreground">
+                  {paymentMethod === "SINPE" ? (
+                    <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  ) : (
+                    <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  )}
+                  <p>
+                    {paymentMethod === "SINPE"
+                      ? "Realiza la transferencia y adjunta el comprobante, o envíalo por WhatsApp para revisarlo."
+                      : "Paga al recibir o recoger tu pedido. Confirmaremos contigo los detalles de la entrega."}
+                  </p>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="deliveryNotes">Notas</Label>
@@ -238,7 +275,7 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
               {createdOrder ? (
                 <Button asChild variant="secondary">
                   <a
-                    href={`https://wa.me/50670104855?text=${encodeURIComponent(
+                    href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
                       `Hola, hice el pedido #${createdOrder.orderNumber} por un total de ${currency(
                         createdOrder.total,
                       )}. Quiero coordinar por WhatsApp.`,
@@ -261,7 +298,7 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
             </form>
           </CardContent>
         </Card>
-        <Card>
+        <Card data-checkout-summary className="order-1 rounded-2xl lg:order-2 lg:sticky lg:top-28">
           <CardHeader>
             <CardTitle>Resumen</CardTitle>
           </CardHeader>
@@ -279,6 +316,10 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
               ))
             )}
             <Separator />
+            <div className="flex items-center gap-3 rounded-lg bg-rose-50 px-3 py-3 text-sm text-rose-900">
+              <Truck className="h-4 w-4 shrink-0 text-primary" />
+              <span>Envío gratis dentro de Liberia centro.</span>
+            </div>
             {discountPreview && discountPreview.discountTotal > 0 ? (
               <>
                 <div className="flex justify-between text-sm text-muted-foreground">
@@ -314,11 +355,12 @@ export function CheckoutClient({ sinpe, initialPayment, isLoggedIn }: CheckoutCl
             setMessage("El tiempo para este pago SINPE terminó. Confirma el pedido de nuevo para generar otro tiempo.");
           }}
           onOrderConfirmed={(order, resultMessage) => {
-            setCreatedOrder(order);
-            setMessage(resultMessage);
-            clearCart();
+            completeOrder(order, resultMessage);
           }}
         />
+      ) : null}
+      {showCelebration && createdOrder ? (
+        <OrderCelebration orderNumber={createdOrder.orderNumber} />
       ) : null}
     </>
   );

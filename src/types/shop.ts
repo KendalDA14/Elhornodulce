@@ -18,6 +18,7 @@ export type PublicProduct = {
   priceFinal: number;
   isAvailable: boolean;
   categoryName: string;
+  categorySlug: string;
 };
 
 type ProductReviewView = {
@@ -38,6 +39,7 @@ export type PublicCategory = {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   products: PublicProduct[];
 };
 

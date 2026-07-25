@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Edit, Plus, Power, Store, Trash2 } from "lucide-react";
 import { deleteProductAction, toggleProductAction } from "@/actions/admin";
-import { getAdminLists } from "@/lib/data";
+import { getAdminProducts } from "@/lib/data";
 import { currency, toNumber } from "@/lib/format";
 import { AdminFlashMessage } from "@/components/admin/admin-flash-message";
 import { InlineActionForm } from "@/components/admin/inline-action-form";
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
-  const { products } = await getAdminLists();
+  const products = await getAdminProducts();
 
   return (
     <div className="space-y-6">

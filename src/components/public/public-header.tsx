@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LayoutDashboard, Menu, UserCircle } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useEffect, useState } from "react";
@@ -12,6 +13,7 @@ import { BrandLogo } from "@/components/public/brand-logo";
 const links = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/personalizado", label: "Personalizado" },
+  { href: "/#nosotros", label: "Sobre nosotros" },
   { href: "/#resenas", label: "Reseñas" },
   { href: "/#devoluciones", label: "Políticas" },
 ];
@@ -29,6 +31,7 @@ export function PublicHeader({
 }) {
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -41,15 +44,39 @@ export function PublicHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (pathname !== "/" || !window.location.hash) return;
+
+    let attempts = 0;
+    let timeout = 0;
+    const scrollToHash = () => {
+      const target = document.getElementById(window.location.hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 10) timeout = window.setTimeout(scrollToHash, 120);
+    };
+
+    timeout = window.setTimeout(scrollToHash, 120);
+    return () => window.clearTimeout(timeout);
+  }, [pathname]);
+
   const accountLink = isAdmin ? "/admin" : customerName ? "/cuenta" : "/login";
   const accountLabel = isAdmin ? "Panel" : customerName || "Cuenta";
 
   const handleMobileLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     setMenuOpen(false);
 
-    if (!href.startsWith("/#") || window.location.pathname !== "/") return;
+    if (!href.startsWith("/#")) return;
 
     event.preventDefault();
+    if (pathname !== "/") {
+      window.location.assign(href);
+      return;
+    }
+
     const targetId = href.slice(2);
     window.setTimeout(() => {
       const target = document.getElementById(targetId);
@@ -92,6 +119,16 @@ export function PublicHeader({
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+          >
+            <Link href={accountLink} aria-label={accountLabel} title={accountLabel}>
+              {isAdmin ? <LayoutDashboard className="h-4 w-4" /> : <UserCircle className="h-4 w-4" />}
+            </Link>
+          </Button>
           <CartButton compact />
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>

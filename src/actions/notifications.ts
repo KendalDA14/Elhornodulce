@@ -20,7 +20,22 @@ export async function saveAdminPushSubscriptionAction(subscription: BrowserPushS
   const p256dh = typeof subscription.keys?.p256dh === "string" ? subscription.keys.p256dh : "";
   const auth = typeof subscription.keys?.auth === "string" ? subscription.keys.auth : "";
 
-  if (!endpoint || !p256dh || !auth) {
+  let endpointUrl: URL | null = null;
+  try {
+    endpointUrl = new URL(endpoint);
+  } catch {
+    endpointUrl = null;
+  }
+
+  if (
+    !endpointUrl ||
+    endpointUrl.protocol !== "https:" ||
+    endpoint.length > 512 ||
+    !p256dh ||
+    p256dh.length > 255 ||
+    !auth ||
+    auth.length > 255
+  ) {
     return { ok: false, message: "No se pudo activar la notificación en este dispositivo." };
   }
 
@@ -47,10 +62,12 @@ export async function saveAdminPushSubscriptionAction(subscription: BrowserPushS
 }
 
 export async function removeAdminPushSubscriptionAction(endpoint: string): Promise<ActionResult> {
-  await requireAdminAction();
-  if (!endpoint) return { ok: false, message: "No se encontró la suscripción del dispositivo." };
+  const admin = await requireAdminAction();
+  if (!endpoint || endpoint.length > 512) {
+    return { ok: false, message: "No se encontró la suscripción del dispositivo." };
+  }
 
-  await getPrisma().pushSubscription.deleteMany({ where: { endpoint } });
+  await getPrisma().pushSubscription.deleteMany({ where: { endpoint, adminId: admin.id } });
   revalidatePath("/admin");
   return { ok: true, message: "Notificaciones desactivadas en este dispositivo." };
 }

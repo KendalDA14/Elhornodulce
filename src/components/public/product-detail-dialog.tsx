@@ -20,12 +20,16 @@ import { Separator } from "@/components/ui/separator";
 export function ProductDetailDialog({
   product,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   product: PublicProduct;
   trigger: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { addProduct } = useCart();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(product.imageUrl);
   const hasDiscount = Boolean(product.discountPercent && product.originalPrice > product.priceFinal);
@@ -39,6 +43,12 @@ export function ProductDetailDialog({
     () => whatsappUrl(`Hola, quiero consultar sobre este postre: ${product.name}`),
     [product.name],
   );
+  const open = controlledOpen ?? internalOpen;
+
+  function setOpen(nextOpen: boolean) {
+    if (controlledOpen === undefined) setInternalOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   function addAndCheckout(method: "SINPE" | "CASH") {
     addProduct(product, quantity);

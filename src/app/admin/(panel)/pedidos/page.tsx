@@ -596,70 +596,8 @@ export default async function OrdersPage({
             </div>
           ))}
           {!activeRequests.length ? <p className="text-sm text-muted-foreground">No hay solicitudes personalizadas activas.</p> : null}
-
-          {false ? (
-            <section className="mt-2 grid gap-3 border-t pt-4">
-              <h3 className="font-semibold">Solicitudes rechazadas</h3>
-              {rejectedRequests.map((request) => (
-                <div key={request.id} className="grid gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{request.customerName}</p>
-                        <Badge variant="destructive">{customStatusLabel(request.status)}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground">{request.description}</p>
-                      {request.notes ? <p className="mt-2 text-sm text-muted-foreground">Notas: {request.notes}</p> : null}
-                    </div>
-                    {request.imageUrl ? (
-                      <Button asChild size="sm" variant="outline" className="w-full md:w-auto">
-                        <a href={request.imageUrl} target="_blank" rel="noreferrer">Ver referencia</a>
-                      </Button>
-                    ) : null}
-                  </div>
-                  <p className="rounded-lg bg-background/70 p-3 text-sm text-muted-foreground">
-                    Esta solicitud fue rechazada y ya no muestra acciones de aceptación.
-                  </p>
-                </div>
-              ))}
-            </section>
-          ) : null}
         </CardContent>
       </Card>
-
-      {false ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Solicitudes rechazadas</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {rejectedRequests.map((request) => (
-              <div key={request.id} className="grid gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">{request.customerName}</p>
-                      <Badge variant="destructive">{customStatusLabel(request.status)}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{request.description}</p>
-                    {request.notes ? <p className="mt-2 text-sm text-muted-foreground">Notas: {request.notes}</p> : null}
-                  </div>
-                  {request.imageUrl ? (
-                    <Button asChild size="sm" variant="outline" className="w-full md:w-auto">
-                      <a href={request.imageUrl} target="_blank" rel="noreferrer">Ver referencia</a>
-                    </Button>
-                  ) : null}
-                </div>
-                <p className="rounded-lg bg-background/70 p-3 text-sm text-muted-foreground">
-                  Esta solicitud fue rechazada y ya no muestra acciones de aceptación.
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }

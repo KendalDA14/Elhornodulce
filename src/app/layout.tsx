@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { LandingAnimations } from "@/components/public/landing-animations";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { absoluteSiteUrl, siteDescription, siteName, siteTitle, siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -44,7 +43,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon-48.png", type: "image/png", sizes: "48x48" },
+      { url: "/icon-96.png", type: "image/png", sizes: "96x96" },
+      { url: "/favicon.ico", type: "image/x-icon", sizes: "48x48" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
     ],
     shortcut: "/favicon.ico",
@@ -109,7 +109,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
         <TooltipProvider>
-          <LandingAnimations>{children}</LandingAnimations>
+          {children}
         </TooltipProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { getApprovedReviews, getFeaturedProducts, getSiteSettings, getStarProduc
 import { currency } from "@/lib/format";
 import { FeaturedProductFilter } from "@/components/public/featured-product-filter";
 import { RefundPolicyAccordion } from "@/components/public/refund-policy-accordion";
+import { ResponsiveImage } from "@/components/public/responsive-image";
 import { ReviewForm } from "@/components/public/review-form";
 import { StarProductSection } from "@/components/public/star-product-section";
 import { Button } from "@/components/ui/button";
@@ -37,39 +38,37 @@ export default async function HomePage() {
         className="relative min-h-[calc(100vh-4rem)] overflow-hidden border-b"
       >
         {heroImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            data-hero-image
+          <ResponsiveImage
             src={heroImageUrl}
             alt={settings.heroTitle}
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
+            priority
+            sizes="100vw"
             className="absolute inset-0 h-[115%] w-full object-cover"
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(255,255,255,0.78),rgba(255,255,255,0.34))]" />
-        <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center px-4 py-16 sm:px-6">
-          <div className="max-w-2xl space-y-6">
-            <p data-hero className="text-sm font-semibold uppercase tracking-[0.18em] text-rose-700">
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.97),rgba(255,255,255,0.82),rgba(255,255,255,0.32))]" />
+        <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center px-5 py-14 sm:px-8 lg:px-12">
+          <div className="max-w-3xl space-y-6">
+            <p data-hero className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-700 sm:text-sm">
               {settings.heroEyebrow}
             </p>
-            <h1 data-hero className="text-5xl font-semibold tracking-tight sm:text-7xl">
+            <h1
+              data-hero
+              className="font-serif text-5xl font-semibold leading-[0.98] tracking-normal text-rose-950 sm:text-7xl lg:text-8xl"
+            >
               {settings.heroTitle}
             </h1>
-            <p data-hero className="max-w-xl text-lg leading-8 text-muted-foreground">
+            <p data-hero className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-9">
               {settings.heroDescription}
             </p>
-            <p data-hero className="max-w-xl rounded-lg border bg-white/85 p-3 text-sm font-medium text-rose-900">
+            <p
+              data-hero
+              className="max-w-2xl rounded-xl border border-rose-200 bg-white/90 px-4 py-4 text-sm font-semibold leading-5 text-rose-950 shadow-sm sm:px-5 sm:leading-6"
+            >
               {settings.heroNotice}
+              <span className="mt-1 block text-rose-700">Envío gratis en Liberia centro</span>
             </p>
-            <p data-hero className="inline-flex w-fit max-w-full rounded-full border border-rose-200 bg-rose-50/90 px-3 py-2 text-xs font-semibold text-rose-950 shadow-sm sm:rounded-lg sm:p-3 sm:text-sm">
-              <span className="sm:hidden">Liberia centro: envío gratis</span>
-              <span className="hidden sm:inline">
-                Somos un emprendimiento de Liberia. Envío gratis dentro de Liberia centro.
-              </span>
-            </p>
-            <div data-hero className="flex flex-col gap-3 sm:flex-row">
+            <div data-hero className="flex flex-col gap-3 pt-1 sm:flex-row">
               <Button asChild size="lg">
                 <Link href="/catalogo">
                   Ver catálogo <ArrowRight className="ml-2 h-4 w-4" />
@@ -82,6 +81,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <StarProductSection product={starProduct} />
 
       <section className="mx-auto grid max-w-7xl gap-4 px-4 py-10 sm:grid-cols-3 sm:px-6">
         {[
@@ -118,7 +119,7 @@ export default async function HomePage() {
               <br />
               <span className="inline-block">ingredientes de calidad y el toque casero</span>
               <br />
-              <span className="font-semibold text-rose-500">que te encanta.</span>
+              <span className="font-semibold text-rose-700">que te encanta.</span>
             </p>
           </div>
           <div
@@ -137,9 +138,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <StarProductSection product={starProduct} />
-
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+      <section id="destacados" className="mx-auto max-w-7xl scroll-mt-28 px-4 py-14 sm:px-6">
         <div data-reveal className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">
@@ -153,6 +152,36 @@ export default async function HomePage() {
         </div>
         <div data-reveal>
           <FeaturedProductFilter products={products} />
+        </div>
+      </section>
+
+      <section id="nosotros" className="scroll-mt-28 border-y bg-card/45">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-14 lg:px-12 lg:py-16">
+          <div data-reveal className="aspect-[16/10] overflow-hidden rounded-lg bg-muted sm:aspect-[4/3] lg:aspect-[16/10]">
+            {settings.aboutImageUrl || heroImageUrl ? (
+              <ResponsiveImage
+                src={settings.aboutImageUrl || heroImageUrl || ""}
+                alt="Postres caseros de El horno dulce en Liberia"
+                sizes="(min-width: 1024px) 48vw, 100vw"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center px-5 text-center text-sm text-muted-foreground">
+                El horno dulce, postres caseros en Liberia.
+              </div>
+            )}
+          </div>
+          <div data-reveal className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-700 sm:text-sm">
+              {settings.aboutEyebrow}
+            </p>
+            <h2 className="mt-3 font-serif text-4xl font-semibold leading-tight text-rose-950 sm:text-5xl">
+              {settings.aboutTitle}
+            </h2>
+            <p className="mt-5 whitespace-pre-line text-base leading-8 text-muted-foreground">
+              {settings.aboutDescription}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -196,7 +225,11 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="rounded-xl border bg-card p-3 shadow-sm sm:p-5">
-            <RefundPolicyAccordion refundPolicy={settings.refundPolicy} />
+            <RefundPolicyAccordion
+              reviewText={settings.refundReviewText}
+              replacementText={settings.refundReplacementText}
+              partialText={settings.refundPartialText}
+            />
           </div>
         </div>
       </section>

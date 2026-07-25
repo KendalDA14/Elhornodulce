@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { CartProvider } from "@/components/public/cart-provider";
+import { LandingAnimations } from "@/components/public/landing-animations";
 import { PromotionTicker } from "@/components/public/promotion-ticker";
 import { PublicHeaderShell } from "@/components/public/public-header-shell";
 import { SmoothProvider } from "@/components/public/smooth-provider";
@@ -12,30 +13,32 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <CartProvider>
-      <SmoothProvider>
-        <PromotionTicker items={promotions} />
-        <div className={hasPromotions ? "pt-8" : undefined}>
-          <PublicHeaderShell promoOffset={hasPromotions} />
-          <main>{children}</main>
-          <WhatsappFloatingButton />
-          <footer className="border-t py-8">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 text-sm text-muted-foreground sm:px-6">
-              <Image
-                src="/brand/logo.jpeg"
-                alt="El horno dulce"
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-full object-cover"
-              />
-              <div className="flex flex-col gap-1">
-                <strong className="text-foreground">El horno dulce</strong>
-                <span>Postres caseros hechos con mucho amor. Gracias por preferirnos.</span>
-                <span>Emprendimiento de Liberia. Envío gratis dentro de Liberia centro.</span>
+      <LandingAnimations>
+        <SmoothProvider>
+          <PromotionTicker items={promotions} />
+          <div className={hasPromotions ? "pt-8" : undefined}>
+            <PublicHeaderShell promoOffset={hasPromotions} />
+            <main>{children}</main>
+            <WhatsappFloatingButton />
+            <footer className="border-t py-8">
+              <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 text-sm text-muted-foreground sm:px-6">
+                <Image
+                  src="/brand/logo.jpeg"
+                  alt="El horno dulce"
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+                <div className="flex flex-col gap-1">
+                  <strong className="text-foreground">El horno dulce</strong>
+                  <span>Postres caseros hechos con mucho amor. Gracias por preferirnos.</span>
+                  <span>Emprendimiento de Liberia. Envío gratis dentro de Liberia centro.</span>
+                </div>
               </div>
-            </div>
-          </footer>
-        </div>
-      </SmoothProvider>
+            </footer>
+          </div>
+        </SmoothProvider>
+      </LandingAnimations>
     </CartProvider>
   );
 }

@@ -5,6 +5,10 @@ import {
   createSinpeOrderWithProofAction,
 } from "@/actions/public";
 import { SameOriginError } from "@/lib/auth";
+import { readBoundedFormData, RequestBodyTooLargeError } from "@/lib/http-body";
+
+const MAX_CHECKOUT_BODY_BYTES = 6 * 1024 * 1024;
+const checkoutIntents = new Set(["cash", "sinpe-proof", "sinpe-whatsapp"]);
 
 export async function POST(request: Request) {
   try {
@@ -16,8 +20,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const formData = await request.formData();
-    const intent = String(formData.get("intent") || "cash");
+    const formData = await readBoundedFormData(request, MAX_CHECKOUT_BODY_BYTES);
+    const intent = String(formData.get("intent") || "");
+    if (!checkoutIntents.has(intent)) {
+      return NextResponse.json(
+        { ok: false, message: "La forma de confirmar el pedido no es válida." },
+        { status: 400 },
+      );
+    }
     formData.delete("intent");
 
     const result =
@@ -29,6 +39,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return NextResponse.json(
+        { ok: false, message: "El comprobante supera el tamaño permitido." },
+        { status: 413 },
+      );
+    }
     if (error instanceof SameOriginError) {
       return NextResponse.json({ ok: false, message: "Solicitud no permitida." }, { status: 403 });
     }

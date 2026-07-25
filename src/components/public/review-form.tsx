@@ -14,13 +14,16 @@ const initialState = { ok: false, message: "" };
 export function ReviewForm() {
   const [state, formAction, pending] = useActionState(createReviewAction, initialState);
   const [rating, setRating] = useState(5);
+  const [publishMode, setPublishMode] = useState("named");
 
   return (
     <form action={formAction} className="grid gap-4 rounded-lg border bg-card p-5">
       <div className="grid gap-2">
-        <Label>Publicacion</Label>
-        <Select name="publishMode" defaultValue="named">
-          <SelectTrigger>
+        <Label>Publicación</Label>
+        <Select name="publishMode" value={publishMode} onValueChange={setPublishMode}>
+          <SelectTrigger
+            aria-label={publishMode === "anonymous" ? "Publicar como anónimo" : "Publicar con nombre"}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

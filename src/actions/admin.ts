@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/auth";
-import { uploadBlobFile } from "@/lib/blob";
+import { deleteUploadedFile, uploadBlobFile } from "@/lib/blob";
 import { slugify, toNumber } from "@/lib/format";
 import { nextOrderNumber } from "@/lib/orders";
 import { getPrisma } from "@/lib/prisma";
@@ -21,6 +21,15 @@ import type { ActionResult } from "@/actions/public";
 
 function boolFromForm(value: FormDataEntryValue | null) {
   return value === "on" || value === "true";
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
 }
 
 function normalizePromotionCode(value: string) {
@@ -56,7 +65,35 @@ function orderedNewUploads(
   return [...ordered, ...remaining];
 }
 
-async function uniqueProductSlug(name: string, excludeId?: string) {
+const safeUploadErrors = new Set([
+  "Tipo de carga no permitido.",
+  "El archivo no puede superar 5 MB.",
+  "Solo se permiten imágenes.",
+  "El contenido del archivo no corresponde a una imagen permitida.",
+  "Dimensiones de imagen no permitidas.",
+  "La imagen está dañada o no se puede procesar.",
+]);
+
+function safeAdminError(error: unknown, fallback: string) {
+  if (error instanceof Error && safeUploadErrors.has(error.message)) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+function validateProductImages(files: File[]) {
+  const totalSize = files.reduce((total, file) => total + file.size, 0);
+  if (files.length > 10) {
+    return "Puedes guardar un máximo de 10 imágenes por producto.";
+  }
+  if (totalSize > 30 * 1024 * 1024) {
+    return "Las imágenes seleccionadas superan el tamaño total permitido.";
+  }
+  return null;
+}
+
+async function uniqueProductSlug(name: string) {
   const prisma = getPrisma();
   const baseSlug = slugify(name) || "producto";
 
@@ -65,7 +102,6 @@ async function uniqueProductSlug(name: string, excludeId?: string) {
     const existing = await prisma.product.findFirst({
       where: {
         slug: candidate,
-        ...(excludeId ? { id: { not: excludeId } } : {}),
       },
       select: { id: true },
     });
@@ -96,7 +132,7 @@ export async function createCategoryAction(_state: ActionResult, formData: FormD
   if (!parsed.success) return { ok: false, message: "Categoría inválida." };
 
   try {
-    await getPrisma().category.create({
+    const category = await getPrisma().category.create({
       data: {
         name: parsed.data.name,
         slug: slugify(parsed.data.name),
@@ -105,6 +141,8 @@ export async function createCategoryAction(_state: ActionResult, formData: FormD
     });
     revalidatePath("/admin/categorias");
     revalidatePath("/catalogo");
+    revalidatePath(`/categorias/${category.slug}`);
+    revalidatePath("/sitemap.xml");
     return { ok: true, message: "Categoría creada." };
   } catch {
     return { ok: false, message: "No se pudo crear la categoría." };
@@ -122,11 +160,10 @@ export async function updateCategoryAction(_state: ActionResult, formData: FormD
   if (!parsed.success || !parsed.data.id) return { ok: false, message: "Categoría inválida." };
 
   try {
-    await getPrisma().category.update({
+    const category = await getPrisma().category.update({
       where: { id: parsed.data.id },
       data: {
         name: parsed.data.name,
-        slug: slugify(parsed.data.name),
         description: parsed.data.description || null,
         isActive: Boolean(parsed.data.isActive),
       },
@@ -134,6 +171,8 @@ export async function updateCategoryAction(_state: ActionResult, formData: FormD
     revalidatePath("/admin/categorias");
     revalidatePath("/");
     revalidatePath("/catalogo");
+    revalidatePath(`/categorias/${category.slug}`);
+    revalidatePath("/sitemap.xml");
     return { ok: true, message: "Categoría actualizada." };
   } catch {
     return { ok: false, message: "No se pudo actualizar la categoría." };
@@ -147,10 +186,15 @@ export async function toggleCategoryAction(formData: FormData): Promise<ActionRe
   if (!id) return { ok: false, message: "Categoría inválida." };
 
   try {
-    await getPrisma().category.update({ where: { id }, data: { isActive } });
+    const category = await getPrisma().category.update({
+      where: { id },
+      data: { isActive },
+    });
     revalidatePath("/admin/categorias");
     revalidatePath("/");
     revalidatePath("/catalogo");
+    revalidatePath(`/categorias/${category.slug}`);
+    revalidatePath("/sitemap.xml");
     return { ok: true, message: isActive ? "Categoría activada." : "Categoría desactivada." };
   } catch {
     return { ok: false, message: "No se pudo cambiar la categoría." };
@@ -176,6 +220,8 @@ export async function deleteCategoryAction(formData: FormData): Promise<ActionRe
     revalidatePath("/admin/categorias");
     revalidatePath("/");
     revalidatePath("/catalogo");
+    revalidatePath(`/categorias/${category.slug}`);
+    revalidatePath("/sitemap.xml");
     return { ok: true, message: "Categoría eliminada." };
   } catch {
     return { ok: false, message: "No se pudo eliminar la categoría." };
@@ -197,15 +243,20 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
   });
   if (!parsed.success) return { ok: false, message: "Producto inválido." };
 
+  let uploadedFiles: { url: string; path: string }[] = [];
+  let productSaved = false;
   try {
     const prisma = getPrisma();
     const slug = await uniqueProductSlug(parsed.data.name);
     const files = formData.getAll("images").filter((file): file is File => file instanceof File && file.size > 0);
+    const imageValidationMessage = validateProductImages(files);
+    if (imageValidationMessage) return { ok: false, message: imageValidationMessage };
     const imageOrder = csvField(formData, "imageOrder");
     const newImageTokens = csvField(formData, "newImageTokens");
     const uploaded = await Promise.all(files.map((file) => uploadBlobFile(file, "products")));
+    uploadedFiles = uploaded.filter((item): item is { url: string; path: string } => Boolean(item));
     const cleanUploads = orderedNewUploads(
-      uploaded.filter((item): item is { url: string; path: string } => Boolean(item)),
+      uploadedFiles,
       imageOrder,
       newImageTokens,
     );
@@ -215,7 +266,7 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
       await prisma.product.updateMany({ data: { isFeatured: false } });
     }
 
-    await prisma.product.create({
+    const product = await prisma.product.create({
       data: {
         name: parsed.data.name,
         slug,
@@ -240,13 +291,19 @@ export async function createProductAction(_state: ActionResult, formData: FormDa
         },
       },
     });
+    productSaved = true;
 
     revalidatePath("/");
     revalidatePath("/catalogo");
+    revalidatePath(`/productos/${product.slug}`);
+    revalidatePath("/sitemap.xml");
     revalidatePath("/admin/productos");
     return { ok: true, message: "Producto creado correctamente." };
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "No se pudo crear el producto." };
+    if (!productSaved) {
+      await Promise.allSettled(uploadedFiles.map((upload) => deleteUploadedFile(upload)));
+    }
+    return { ok: false, message: safeAdminError(error, "No se pudo crear el producto.") };
   }
 }
 
@@ -266,15 +323,19 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
   });
   if (!id || !parsed.success) return { ok: false, message: "Producto inválido." };
 
+  let uploadedFiles: { url: string; path: string }[] = [];
+  let productSaved = false;
   try {
     const prisma = getPrisma();
-    const slug = await uniqueProductSlug(parsed.data.name, id);
     const files = formData.getAll("images").filter((file): file is File => file instanceof File && file.size > 0);
+    const imageValidationMessage = validateProductImages(files);
+    if (imageValidationMessage) return { ok: false, message: imageValidationMessage };
     const imageOrder = csvField(formData, "imageOrder");
     const newImageTokens = csvField(formData, "newImageTokens");
     const removedImageIds = csvField(formData, "removedImageIds");
     const uploaded = await Promise.all(files.map((file) => uploadBlobFile(file, "products")));
     const cleanUploads = uploaded.filter((item): item is { url: string; path: string } => Boolean(item));
+    uploadedFiles = cleanUploads;
 
     if (parsed.data.isFeatured) {
       await prisma.product.updateMany({ where: { id: { not: id } }, data: { isFeatured: false } });
@@ -284,7 +345,6 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
       where: { id },
       data: {
         name: parsed.data.name,
-        slug,
         categoryId: parsed.data.categoryId,
         description: parsed.data.description,
         visibleIngredients: parsed.data.visibleIngredients || null,
@@ -376,13 +436,19 @@ export async function updateProductAction(_state: ActionResult, formData: FormDa
         },
       });
     });
+    productSaved = true;
 
     revalidatePath("/");
     revalidatePath("/catalogo");
+    revalidatePath(`/productos/${product.slug}`);
+    revalidatePath("/sitemap.xml");
     revalidatePath("/admin/productos");
     return { ok: true, message: "Producto actualizado correctamente." };
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "No se pudo actualizar el producto." };
+    if (!productSaved) {
+      await Promise.allSettled(uploadedFiles.map((upload) => deleteUploadedFile(upload)));
+    }
+    return { ok: false, message: safeAdminError(error, "No se pudo actualizar el producto.") };
   }
 }
 
@@ -404,6 +470,8 @@ export async function toggleProductAction(formData: FormData): Promise<ActionRes
 
   revalidatePath("/");
   revalidatePath("/catalogo");
+  revalidatePath(`/productos/${updated.slug}`);
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/productos");
   return {
     ok: true,
@@ -421,6 +489,12 @@ export async function deleteProductAction(formData: FormData): Promise<ActionRes
 
   try {
     const prisma = getPrisma();
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { slug: true },
+    });
+    if (!product) return { ok: false, message: "Producto no encontrado." };
+
     const salesCount = await prisma.orderItem.count({ where: { productId: id } });
     if (salesCount > 0) {
       return { ok: false, message: "No se puede eliminar: este producto ya tiene ventas." };
@@ -430,6 +504,8 @@ export async function deleteProductAction(formData: FormData): Promise<ActionRes
     await prisma.product.delete({ where: { id } });
     revalidatePath("/");
     revalidatePath("/catalogo");
+    revalidatePath(`/productos/${product.slug}`);
+    revalidatePath("/sitemap.xml");
     revalidatePath("/admin/productos");
     return { ok: true, message: "Producto eliminado." };
   } catch {
@@ -561,6 +637,17 @@ export async function createProductionBatchAction(_state: ActionResult, formData
   const quantities = formDataList(formData, "itemQuantity");
   const units = formDataList(formData, "itemUnit");
   const costs = formDataList(formData, "itemCost");
+  if (
+    Math.max(
+      ingredientIds.length,
+      itemNames.length,
+      quantities.length,
+      units.length,
+      costs.length,
+    ) > 50
+  ) {
+    return { ok: false, message: "El lote no puede tener más de 50 costos." };
+  }
 
   try {
     const prisma = getPrisma();
@@ -775,6 +862,20 @@ export async function setOrderStatusAction(formData: FormData): Promise<ActionRe
   if (order.orderStatus === "CANCELLED" && status !== "CANCELLED") {
     return { ok: false, message: "Este pedido esta cancelado." };
   }
+  const allowedNextStatus: Record<string, string | null> = {
+    NEW: "CONFIRMED",
+    CONFIRMED: "PREPARING",
+    PREPARING: "READY",
+    READY: "DELIVERED",
+    DELIVERED: null,
+    CANCELLED: null,
+  };
+  if (status !== "CANCELLED" && allowedNextStatus[order.orderStatus] !== status) {
+    return { ok: false, message: "El pedido debe avanzar una etapa a la vez." };
+  }
+  if (status !== "CANCELLED" && order.paymentStatus !== "PAID") {
+    return { ok: false, message: "Confirma el pago antes de avanzar el pedido." };
+  }
 
   await getPrisma().order.update({
     where: { id: orderId },
@@ -952,51 +1053,78 @@ export async function updateCustomRequestAction(formData: FormData): Promise<Act
     if (price <= 0 || !parsed.data.paymentMethod) {
       return { ok: false, message: "Para aceptar, indica precio y metodo de pago." };
     }
+    const paymentMethod = parsed.data.paymentMethod;
 
-    const number = await nextOrderNumber();
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: number,
-        customerName: request.customerName,
-        customerPhone: request.customerPhone,
-        customerEmail: request.customerEmail,
-        deliveryNotes: parsed.data.adminNotes || request.notes || null,
-        subtotal: price,
-        discountTotal: 0,
-        total: price,
-        paymentMethod: parsed.data.paymentMethod,
-        paymentStatus: "PENDING",
-        orderStatus: "CONFIRMED",
-        items: {
-          create: {
-            productId: null,
-            productName: "Pedido personalizado",
-            imageUrl: request.imageUrl,
-            estimatedDelivery: request.desiredDate ? request.desiredDate.toLocaleDateString("es-CR") : null,
-            reviewCode: null,
-            unitPrice: price,
-            quantity: 1,
-            lineTotal: price,
-          },
-        },
-      },
-    });
+    let number = "";
+    let orderId = "";
+    const maxNumberAttempts = 40;
+    for (let attempt = 0; attempt < maxNumberAttempts; attempt += 1) {
+      number = await nextOrderNumber();
+      try {
+        orderId = await prisma.$transaction(async (tx) => {
+          const order = await tx.order.create({
+            data: {
+              orderNumber: number,
+              customerName: request.customerName,
+              customerPhone: request.customerPhone,
+              customerEmail: request.customerEmail,
+              deliveryNotes: parsed.data.adminNotes || request.notes || null,
+              subtotal: price,
+              discountTotal: 0,
+              total: price,
+              paymentMethod,
+              paymentStatus: "PENDING",
+              orderStatus: "CONFIRMED",
+              items: {
+                create: {
+                  productId: null,
+                  productName: "Pedido personalizado",
+                  imageUrl: request.imageUrl,
+                  estimatedDelivery: request.desiredDate
+                    ? request.desiredDate.toLocaleDateString("es-CR")
+                    : null,
+                  reviewCode: null,
+                  unitPrice: price,
+                  quantity: 1,
+                  lineTotal: price,
+                },
+              },
+            },
+          });
 
-    await prisma.customDessertRequest.update({
-      where: { id: parsed.data.id },
-      data: {
-        status: "ACCEPTED",
-        adminNotes: parsed.data.adminNotes || request.adminNotes,
-        orderId: order.id,
-      },
-    });
+          const claimed = await tx.customDessertRequest.updateMany({
+            where: { id: parsed.data.id, orderId: null },
+            data: {
+              status: "ACCEPTED",
+              adminNotes: parsed.data.adminNotes || request.adminNotes,
+              orderId: order.id,
+            },
+          });
+          if (claimed.count !== 1) {
+            throw new Error("CUSTOM_REQUEST_ALREADY_ACCEPTED");
+          }
+          return order.id;
+        });
+        break;
+      } catch (error) {
+        if (error instanceof Error && error.message === "CUSTOM_REQUEST_ALREADY_ACCEPTED") {
+          return { ok: false, message: "Esta solicitud ya tiene un pedido asociado." };
+        }
+        if (attempt < maxNumberAttempts - 1 && isUniqueConstraintError(error)) {
+          await new Promise((resolve) => setTimeout(resolve, 10 + Math.floor(Math.random() * 35)));
+          continue;
+        }
+        throw error;
+      }
+    }
+    if (!orderId) throw new Error("ORDER_NUMBER_UNAVAILABLE");
 
     revalidatePath("/admin/pedidos");
     revalidatePath("/admin");
     revalidatePath("/cuenta");
     return { ok: true, message: `Solicitud aceptada. Pedido #${number} creado.` };
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "No se pudo actualizar la solicitud." };
+  } catch {
+    return { ok: false, message: "No se pudo actualizar la solicitud." };
   }
 }
 
@@ -1007,6 +1135,12 @@ export async function updateSiteSettingsAction(_state: ActionResult, formData: F
     heroTitle: formData.get("heroTitle"),
     heroDescription: formData.get("heroDescription"),
     heroNotice: formData.get("heroNotice"),
+    aboutEyebrow: formData.get("aboutEyebrow"),
+    aboutTitle: formData.get("aboutTitle"),
+    aboutDescription: formData.get("aboutDescription"),
+    refundReviewText: formData.get("refundReviewText"),
+    refundReplacementText: formData.get("refundReplacementText"),
+    refundPartialText: formData.get("refundPartialText"),
     refundPolicy: formData.get("refundPolicy"),
   });
   if (!parsed.success) return { ok: false, message: "Completa los ajustes correctamente." };
@@ -1014,6 +1148,11 @@ export async function updateSiteSettingsAction(_state: ActionResult, formData: F
   try {
     const file = formData.get("heroImage");
     const uploaded = file instanceof File && file.size > 0 ? await uploadBlobFile(file, "site") : null;
+    const aboutFile = formData.get("aboutImage");
+    const aboutUploaded =
+      aboutFile instanceof File && aboutFile.size > 0
+        ? await uploadBlobFile(aboutFile, "site")
+        : null;
 
     await getPrisma().siteSettings.upsert({
       where: { id: "default" },
@@ -1022,6 +1161,8 @@ export async function updateSiteSettingsAction(_state: ActionResult, formData: F
         ...parsed.data,
         heroImageUrl: uploaded?.url || null,
         heroImagePath: uploaded?.path || null,
+        aboutImageUrl: aboutUploaded?.url || null,
+        aboutImagePath: aboutUploaded?.path || null,
       },
       update: {
         ...parsed.data,
@@ -1031,6 +1172,12 @@ export async function updateSiteSettingsAction(_state: ActionResult, formData: F
               heroImagePath: uploaded.path,
             }
           : {}),
+        ...(aboutUploaded
+          ? {
+              aboutImageUrl: aboutUploaded.url,
+              aboutImagePath: aboutUploaded.path,
+            }
+          : {}),
       },
     });
 
@@ -1038,7 +1185,7 @@ export async function updateSiteSettingsAction(_state: ActionResult, formData: F
     revalidatePath("/admin/ajustes");
     return { ok: true, message: "Ajustes actualizados." };
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "No se pudieron guardar los ajustes." };
+    return { ok: false, message: safeAdminError(error, "No se pudieron guardar los ajustes.") };
   }
 }
 
@@ -1093,7 +1240,7 @@ export async function createOrderAdjustmentAction(formData: FormData): Promise<A
       ok: true,
       message: parsed.data.type === "REFUND" ? "Devolucion registrada." : "Descuento registrado.",
     };
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "No se pudo registrar el ajuste." };
+  } catch {
+    return { ok: false, message: "No se pudo registrar el ajuste." };
   }
 }

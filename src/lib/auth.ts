@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
+import { cache } from "react";
 import { getPrisma } from "@/lib/prisma";
 
 const COOKIE_NAME = "horno_admin_session";
@@ -26,36 +27,61 @@ function sessionSecret() {
 }
 
 function shouldUseSecureCookies() {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://")
+  ) {
+    return true;
+  }
+
   const configured = process.env.AUTH_COOKIE_SECURE;
   if (configured === "true") return true;
   if (configured === "false") return false;
 
-  return process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") === true;
+  return process.env.NODE_ENV === "production";
 }
 
 export async function assertSameOrigin() {
   const headerStore = await headers();
   const origin = headerStore.get("origin");
-  if (!origin) return;
-
+  const referer = headerStore.get("referer");
   const forwardedHost = headerStore.get("x-forwarded-host");
   const host = forwardedHost || headerStore.get("host");
   if (!host) throw new SameOriginError("Solicitud invalida.");
 
-  let originHost = "";
+  const source = origin || referer;
+  if (!source) {
+    if (process.env.NODE_ENV === "production") throw new SameOriginError();
+    return;
+  }
+
+  let sourceUrl: URL;
   try {
-    originHost = new URL(origin).host;
+    sourceUrl = new URL(source);
   } catch {
     throw new SameOriginError("Solicitud invalida.");
   }
 
-  if (originHost !== host) {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (process.env.NODE_ENV === "production" && configuredSiteUrl) {
+    let configuredOrigin: string;
+    try {
+      configuredOrigin = new URL(configuredSiteUrl).origin;
+    } catch {
+      throw new SameOriginError("Configuracion de origen invalida.");
+    }
+
+    if (sourceUrl.origin !== configuredOrigin) throw new SameOriginError();
+    return;
+  }
+
+  if (sourceUrl.host !== host) {
     throw new SameOriginError();
   }
 }
 
-export async function createAdminSession(adminId: string) {
-  const token = await new SignJWT({ adminId })
+export async function createAdminSession(adminId: string, adminVersion: number) {
+  const token = await new SignJWT({ adminId, adminVersion })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -68,6 +94,7 @@ export async function createAdminSession(adminId: string) {
     secure: shouldUseSecureCookies(),
     path: "/",
     maxAge: ADMIN_SESSION_SECONDS,
+    priority: "high",
   });
 }
 
@@ -76,7 +103,7 @@ export async function clearAdminSession() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-export async function getAdminSession() {
+export const getAdminSession = cache(async function getAdminSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
@@ -84,18 +111,20 @@ export async function getAdminSession() {
   try {
     const { payload } = await jwtVerify(token, sessionSecret());
     const adminId = payload.adminId;
-    if (typeof adminId !== "string") return null;
+    const adminVersion = payload.adminVersion;
+    if (typeof adminId !== "string" || typeof adminVersion !== "number") return null;
 
     const admin = await getPrisma().adminUser.findFirst({
       where: { id: adminId, isActive: true },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, name: true, updatedAt: true },
     });
 
-    return admin;
+    if (!admin || admin.updatedAt.getTime() !== adminVersion) return null;
+    return { id: admin.id, email: admin.email, name: admin.name };
   } catch {
     return null;
   }
-}
+});
 
 export async function requireAdmin() {
   const admin = await getAdminSession();
@@ -130,6 +159,7 @@ export async function createCustomerSession(customerId: string) {
     secure: shouldUseSecureCookies(),
     path: "/",
     maxAge: CUSTOMER_SESSION_SECONDS,
+    priority: "high",
   });
 }
 
@@ -138,7 +168,7 @@ export async function clearCustomerSession() {
   cookieStore.delete(CUSTOMER_COOKIE_NAME);
 }
 
-export async function getCustomerSession() {
+export const getCustomerSession = cache(async function getCustomerSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(CUSTOMER_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -155,4 +185,4 @@ export async function getCustomerSession() {
   } catch {
     return null;
   }
-}
+});

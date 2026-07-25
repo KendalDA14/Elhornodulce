@@ -20,11 +20,13 @@ export function InlineActionForm({
   children,
   className,
   confirmMessage,
+  resetOnSuccess = false,
 }: {
   action: (formData: FormData) => Promise<ActionResult | void>;
   children: ReactNode;
   className?: string;
   confirmMessage?: string;
+  resetOnSuccess?: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
@@ -38,7 +40,11 @@ export function InlineActionForm({
 
     startTransition(async () => {
       const response = await action(new FormData(form));
-      setResult(response || { ok: true, message: "Acción realizada." });
+      const nextResult = response || { ok: true, message: "Acción realizada." };
+      setResult(nextResult);
+      if (nextResult.ok && resetOnSuccess) {
+        form.reset();
+      }
       setConfirmOpen(false);
       router.refresh();
     });

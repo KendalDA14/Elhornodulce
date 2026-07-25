@@ -1,4 +1,4 @@
-import { sinpeSettings } from "@/lib/settings";
+import { sinpeSettings, whatsappSettings } from "@/lib/settings";
 import { getCustomerSession } from "@/lib/auth";
 import { CheckoutClient } from "@/components/public/checkout-client";
 
@@ -19,10 +19,15 @@ export default async function CheckoutPage({
         <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Checkout</p>
         <h1 className="mt-2 text-4xl font-semibold">Confirmar pedido</h1>
         <p className="mt-4 text-muted-foreground">
-          El total se recalcula en servidor usando precio y disponibilidad actuales.
+          Revisa tus productos, elige cómo pagar y confirma tu pedido.
         </p>
       </div>
-      <CheckoutClient sinpe={sinpeSettings()} initialPayment={initialPayment} isLoggedIn={Boolean(customer)} />
+      <CheckoutClient
+        sinpe={sinpeSettings()}
+        whatsappNumber={whatsappSettings().number}
+        initialPayment={initialPayment}
+        isLoggedIn={Boolean(customer)}
+      />
     </section>
   );
 }

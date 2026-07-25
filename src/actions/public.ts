@@ -3,11 +3,12 @@
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { assertSameOrigin, getCustomerSession } from "@/lib/auth";
-import { uploadBlobFile } from "@/lib/blob";
+import { deleteUploadedFile, uploadBlobFile } from "@/lib/blob";
 import { shortCode } from "@/lib/format";
 import { calculateOrderTotals, nextOrderNumber } from "@/lib/orders";
 import { getPrisma } from "@/lib/prisma";
 import { sendAdminPushNotification } from "@/lib/push";
+import { consumeRateLimit, requestRateLimitKey } from "@/lib/rate-limit";
 import {
   applyBestPromotion,
   getActivePromotionByCode,
@@ -35,6 +36,23 @@ type CreatedOrderData = {
   paymentMethod: "SINPE" | "CASH";
   customerName: string;
 };
+
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+async function publicRateLimit(
+  scope: string,
+  discriminator: string,
+  limit: number,
+  windowMs: number,
+) {
+  const key = await requestRateLimitKey(scope, discriminator);
+  return consumeRateLimit(key, limit, windowMs);
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+}
 
 function dbId(prefix: string) {
   return `${prefix}_${randomUUID()}`;
@@ -157,63 +175,82 @@ async function createConfirmedOrder(
 
   try {
     const prisma = getPrisma();
-    const number = await nextOrderNumber();
     const settings = sinpeSettings();
     const customer = await getCustomerSession();
+    let number = "";
+    let orderId = "";
 
-    const order = await prisma.$transaction(async (tx) => {
-      const createdOrder = await tx.order.create({
-        data: {
-          id: dbId("order"),
-          orderNumber: number,
-          customerName: parsed.customerName,
-          customerPhone: parsed.customerPhone,
-          customerEmail: null,
-          customerId: customer?.id || null,
-          deliveryNotes: parsed.deliveryNotes || null,
-          subtotal: totals.subtotal,
-          discountTotal: totals.discountTotal,
-          total: totals.total,
-          paymentMethod: parsed.paymentMethod,
-          paymentStatus: parsed.paymentMethod === "SINPE" ? "EN_VALIDACION" : "PENDING",
-          orderStatus: "NEW",
-        },
-      });
+    const maxNumberAttempts = 40;
+    for (let attempt = 0; attempt < maxNumberAttempts; attempt += 1) {
+      number = await nextOrderNumber();
+      try {
+        const order = await prisma.$transaction(async (tx) => {
+          const createdOrder = await tx.order.create({
+            data: {
+              id: dbId("order"),
+              orderNumber: number,
+              customerName: parsed.customerName,
+              customerPhone: parsed.customerPhone,
+              customerEmail: null,
+              customerId: customer?.id || null,
+              deliveryNotes: parsed.deliveryNotes || null,
+              subtotal: totals.subtotal,
+              discountTotal: totals.discountTotal,
+              total: totals.total,
+              paymentMethod: parsed.paymentMethod,
+              paymentStatus: parsed.paymentMethod === "SINPE" ? "EN_VALIDACION" : "PENDING",
+              orderStatus: "NEW",
+            },
+          });
 
-      await tx.orderItem.createMany({
-        data: totals.lines.map((line) => ({
-          id: dbId("item"),
-          orderId: createdOrder.id,
-          productId: line.productId,
-          productName: line.productName,
-          imageUrl: line.imageUrl,
-          estimatedDelivery: line.estimatedDelivery,
-          reviewCode: shortCode(),
-          unitPrice: line.unitPrice,
-          quantity: line.quantity,
-          lineTotal: line.lineTotal,
-        })),
-      });
+          await tx.orderItem.createMany({
+            data: totals.lines.map((line) => ({
+              id: dbId("item"),
+              orderId: createdOrder.id,
+              productId: line.productId,
+              productName: line.productName,
+              imageUrl: line.imageUrl,
+              estimatedDelivery: line.estimatedDelivery,
+              reviewCode: shortCode(),
+              unitPrice: line.unitPrice,
+              quantity: line.quantity,
+              lineTotal: line.lineTotal,
+            })),
+          });
 
-      if (parsed.paymentMethod === "SINPE") {
-        await tx.sinpePaymentProof.create({
-          data: {
-            id: dbId("proof"),
-            orderId: createdOrder.id,
-            holderName: settings.holder,
-            sinpeNumber: settings.number,
-            expectedAmount: totals.total,
-            proofUrl: options?.proof?.url || null,
-            proofPath: options?.proof?.path || null,
-            uploadedAt: options?.proof ? new Date() : null,
-            sentByWhatsapp: Boolean(options?.sentByWhatsapp),
-            whatsappSentAt: options?.sentByWhatsapp ? new Date() : null,
-          },
+          if (parsed.paymentMethod === "SINPE") {
+            await tx.sinpePaymentProof.create({
+              data: {
+                id: dbId("proof"),
+                orderId: createdOrder.id,
+                holderName: settings.holder,
+                sinpeNumber: settings.number,
+                expectedAmount: totals.total,
+                proofUrl: options?.proof?.url || null,
+                proofPath: options?.proof?.path || null,
+                uploadedAt: options?.proof ? new Date() : null,
+                sentByWhatsapp: Boolean(options?.sentByWhatsapp),
+                whatsappSentAt: options?.sentByWhatsapp ? new Date() : null,
+              },
+            });
+          }
+
+          return createdOrder;
         });
+        orderId = order.id;
+        break;
+      } catch (error) {
+        if (attempt < maxNumberAttempts - 1 && isUniqueConstraintError(error)) {
+          await new Promise((resolve) => setTimeout(resolve, 10 + Math.floor(Math.random() * 35)));
+          continue;
+        }
+        throw error;
       }
+    }
 
-      return createdOrder;
-    });
+    if (!orderId) {
+      throw new Error("No se pudo reservar un número de pedido.");
+    }
 
     revalidatePath("/admin/pedidos");
     revalidatePath("/admin");
@@ -231,14 +268,14 @@ async function createConfirmedOrder(
         maximumFractionDigits: 0,
       }).format(totals.total)}.`,
       url: "/admin/pedidos",
-      tag: `order-${order.id}`,
+      tag: `order-${orderId}`,
     }).catch(() => undefined);
 
     return {
       ok: true,
       message: "Pedido realizado con éxito. Me comunicaré contigo lo más pronto posible.",
       data: {
-        orderId: order.id,
+        orderId,
         orderNumber: number,
         total: totals.total,
         paymentMethod: parsed.paymentMethod,
@@ -264,6 +301,9 @@ export async function createOrderAction(formData: FormData): Promise<ActionResul
       message: "Confirma el SINPE subiendo el comprobante o indicando que lo enviarás por WhatsApp.",
     };
   }
+  if (!(await publicRateLimit("order", parsed.data.customerPhone, 20, ONE_HOUR_MS))) {
+    return { ok: false, message: "Has enviado varios pedidos. Espera un momento antes de intentarlo de nuevo." };
+  }
 
   return createConfirmedOrder(formData);
 }
@@ -275,6 +315,9 @@ export async function previewCheckoutTotalsAction(formData: FormData): Promise<A
   appliedCode: string | null;
 }>> {
   await assertSameOrigin();
+  if (!(await publicRateLimit("checkout-preview", "", 80, FIFTEEN_MINUTES_MS))) {
+    return { ok: false, message: "Espera un momento antes de volver a calcular el pedido." };
+  }
   try {
     const priced = await getCheckoutTotals(formData);
     if (!priced.ok) return priced;
@@ -304,6 +347,11 @@ export async function previewCheckoutTotalsAction(formData: FormData): Promise<A
 
 export async function createSinpeOrderWithProofAction(formData: FormData): Promise<ActionResult<CreatedOrderData>> {
   await assertSameOrigin();
+  const parsed = parseCheckoutFormData(formData);
+  if (!parsed.ok) return parsed;
+  if (!(await publicRateLimit("order", parsed.data.customerPhone, 20, ONE_HOUR_MS))) {
+    return { ok: false, message: "Has enviado varios pedidos. Espera un momento antes de intentarlo de nuevo." };
+  }
   const file = formData.get("proof");
 
   if (!(file instanceof File) || file.size === 0) {
@@ -313,12 +361,17 @@ export async function createSinpeOrderWithProofAction(formData: FormData): Promi
     return { ok: false, message: "El comprobante debe ser una imagen." };
   }
 
+  let uploaded: { url: string; path: string } | null = null;
   try {
     formData.set("paymentMethod", "SINPE");
-    const uploaded = await uploadBlobFile(file, "sinpe/pending");
+    const checkoutValidation = await getCheckoutTotals(formData);
+    if (!checkoutValidation.ok) return checkoutValidation;
+
+    uploaded = await uploadBlobFile(file, "sinpe/pending");
     if (!uploaded) return { ok: false, message: "No se pudo subir el archivo." };
 
     const result = await createConfirmedOrder(formData, { proof: uploaded });
+    if (!result.ok) await deleteUploadedFile(uploaded).catch(() => undefined);
     return result.ok
       ? {
           ...result,
@@ -326,6 +379,7 @@ export async function createSinpeOrderWithProofAction(formData: FormData): Promi
         }
       : result;
   } catch {
+    await deleteUploadedFile(uploaded).catch(() => undefined);
     return {
       ok: false,
       message: "No se pudo crear el pedido con comprobante.",
@@ -335,6 +389,11 @@ export async function createSinpeOrderWithProofAction(formData: FormData): Promi
 
 export async function createSinpeOrderWhatsappAction(formData: FormData): Promise<ActionResult<CreatedOrderData>> {
   await assertSameOrigin();
+  const parsed = parseCheckoutFormData(formData);
+  if (!parsed.ok) return parsed;
+  if (!(await publicRateLimit("order", parsed.data.customerPhone, 20, ONE_HOUR_MS))) {
+    return { ok: false, message: "Has enviado varios pedidos. Espera un momento antes de intentarlo de nuevo." };
+  }
   try {
     formData.set("paymentMethod", "SINPE");
     const result = await createConfirmedOrder(formData, { sentByWhatsapp: true });
@@ -354,6 +413,9 @@ export async function createSinpeOrderWhatsappAction(formData: FormData): Promis
 
 export async function createReviewAction(_state: ActionResult, formData: FormData): Promise<ActionResult> {
   await assertSameOrigin();
+  if (!(await publicRateLimit("review", "", 6, ONE_HOUR_MS))) {
+    return { ok: false, message: "Has enviado varias reseñas. Inténtalo más tarde." };
+  }
   const parsed = reviewSchema.safeParse({
     publishMode: formData.get("publishMode"),
     customerName: formData.get("customerName"),
@@ -396,10 +458,14 @@ export async function createCustomRequestAction(_state: ActionResult, formData: 
   });
 
   if (!parsed.success) return { ok: false, message: "Completa la solicitud correctamente." };
+  if (!(await publicRateLimit("custom-request", parsed.data.customerPhone, 5, ONE_HOUR_MS))) {
+    return { ok: false, message: "Ya recibimos varias solicitudes. Inténtalo más tarde." };
+  }
 
+  let uploaded: { url: string; path: string } | null = null;
   try {
     const file = formData.get("image");
-    const uploaded = file instanceof File && file.size > 0 ? await uploadBlobFile(file, "custom-requests") : null;
+    uploaded = file instanceof File && file.size > 0 ? await uploadBlobFile(file, "custom-requests") : null;
 
     await getPrisma().customDessertRequest.create({
       data: {
@@ -423,6 +489,7 @@ export async function createCustomRequestAction(_state: ActionResult, formData: 
     }).catch(() => undefined);
     return { ok: true, message: "Solicitud enviada. Te contactaremos por WhatsApp para cotizar." };
   } catch {
+    await deleteUploadedFile(uploaded).catch(() => undefined);
     return {
       ok: false,
       message: "No se pudo enviar la solicitud.",

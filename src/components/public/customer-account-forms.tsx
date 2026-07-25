@@ -69,15 +69,38 @@ export function RegisterCustomerForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="register-name">Nombre</Label>
-        <Input id="register-name" name="name" autoComplete="name" required />
+        <Input
+          id="register-name"
+          name="name"
+          autoComplete="name"
+          minLength={2}
+          maxLength={60}
+          required
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="register-password">Contraseña</Label>
-        <Input id="register-password" name="password" type="password" autoComplete="new-password" required />
+        <Input
+          id="register-password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          maxLength={128}
+          required
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="register-confirm">Confirmar contraseña</Label>
-        <Input id="register-confirm" name="confirm" type="password" autoComplete="new-password" required />
+        <Input
+          id="register-confirm"
+          name="confirm"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          maxLength={128}
+          required
+        />
       </div>
       <TimedMessage message={state.message} ok={state.ok} messageKey={state} />
       <Button disabled={pending}>{pending ? "Creando cuenta..." : "Registrarme"}</Button>
@@ -144,11 +167,24 @@ export function LoginCustomerForm() {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="login-identifier">Nombre</Label>
-        <Input id="login-identifier" name="identifier" autoComplete="username" required />
+        <Input
+          id="login-identifier"
+          name="identifier"
+          autoComplete="username"
+          maxLength={191}
+          required
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="login-password">Contraseña</Label>
-        <Input id="login-password" name="password" type="password" autoComplete="current-password" required />
+        <Input
+          id="login-password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          maxLength={128}
+          required
+        />
       </div>
       <TimedMessage message={state.error} ok={false} messageKey={state} />
       <Button disabled={pending}>{pending ? "Entrando..." : "Entrar"}</Button>

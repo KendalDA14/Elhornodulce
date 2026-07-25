@@ -1,12 +1,3 @@
-export type RecipeLine = {
-  quantity: number;
-  costPerUnit: number;
-};
-
-export function recipeCost(lines: RecipeLine[]) {
-  return lines.reduce((total, line) => total + line.quantity * line.costPerUnit, 0);
-}
-
 function suggestedPriceFromMargin(cost: number, marginPercent?: number | null) {
   if (!marginPercent) return cost;
   const margin = Math.min(Math.max(marginPercent, 0), 95);

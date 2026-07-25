@@ -5,7 +5,7 @@ function isHostingerDeployment(cwd: string) {
   return process.platform !== "win32" && normalized.includes("/domains/") && path.basename(cwd) === "nodejs";
 }
 
-export function getUploadStorageRoot() {
+function getUploadStorageRoot() {
   const configuredRoot = process.env.UPLOAD_STORAGE_ROOT?.trim();
   if (configuredRoot) return path.resolve(configuredRoot);
 

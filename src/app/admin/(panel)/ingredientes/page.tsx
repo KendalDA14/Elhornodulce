@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { currency, toNumber } from "@/lib/format";
-import { getAdminLists } from "@/lib/data";
+import { getAdminIngredients } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function IngredientsPage() {
-  const { ingredients } = await getAdminLists();
+  const ingredients = await getAdminIngredients();
 
   return (
     <div className="space-y-6">

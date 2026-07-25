@@ -1,8 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { CheckCircle2, Clock, Upload } from "lucide-react";
+import { Clock, Upload } from "lucide-react";
 import type { CheckoutDraft } from "@/components/public/checkout-client";
 import { currency } from "@/lib/format";
 import { whatsappUrl } from "@/lib/settings";
@@ -59,11 +58,9 @@ export function SinpePaymentModal({
   onExpired,
   onOrderConfirmed,
 }: SinpePaymentModalProps) {
-  const router = useRouter();
   const [seconds, setSeconds] = useState(() => Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000)));
   const [message, setMessage] = useState("");
   const [isComplete, setIsComplete] = useState(false);
-  const [showThanks, setShowThanks] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -95,10 +92,7 @@ export function SinpePaymentModal({
     setSeconds(0);
     setMessage(resultMessage);
     onOrderConfirmed(order, resultMessage);
-    setShowThanks(true);
-    window.setTimeout(() => {
-      router.push("/");
-    }, 6000);
+    onOpenChange(false);
   }
 
   function submitProof(formData: FormData) {
@@ -191,15 +185,6 @@ export function SinpePaymentModal({
             </span>
             <span className="font-mono text-lg">{time}</span>
           </div>
-          {showThanks ? (
-            <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <div>
-                <p className="font-semibold">Gracias por tu pedido.</p>
-                <p>Te enviaremos al inicio en un momento.</p>
-              </div>
-            </div>
-          ) : null}
           <p className="text-sm leading-6 text-muted-foreground">{instructions}</p>
           <form action={submitProof} className="grid gap-3">
             <Label htmlFor="proof">Comprobante</Label>

@@ -26,6 +26,15 @@ export function calculateOrderTotals(
 
     const unitPrice = toNumber(product.priceFinal);
     const originalUnitPrice = product.originalPrice === undefined ? unitPrice : toNumber(product.originalPrice);
+    if (
+      !Number.isFinite(unitPrice) ||
+      !Number.isFinite(originalUnitPrice) ||
+      unitPrice < 0 ||
+      originalUnitPrice < 0
+    ) {
+      throw new Error("El precio de uno de los productos no es válido.");
+    }
+
     return {
       productId: product.id,
       productName: product.name,
@@ -41,6 +50,14 @@ export function calculateOrderTotals(
 
   const subtotal = lines.reduce((total, line) => total + line.lineOriginalTotal, 0);
   const total = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+  if (
+    !Number.isFinite(subtotal) ||
+    !Number.isFinite(total) ||
+    subtotal > 99_999_999 ||
+    total > 99_999_999
+  ) {
+    throw new Error("El total del pedido supera el límite permitido.");
+  }
 
   return {
     lines,
@@ -52,14 +69,12 @@ export function calculateOrderTotals(
 
 export async function nextOrderNumber() {
   const prisma = getPrisma();
-  const numericOrders = await prisma.order.findMany({
-    select: { orderNumber: true },
-  });
-  const maxNumber = numericOrders.reduce((max, order) => {
-    if (!/^\d+$/.test(order.orderNumber)) return max;
-    return Math.max(max, Number(order.orderNumber));
-  }, 0);
-  let next = maxNumber + 1;
+  const rows = await prisma.$queryRaw<Array<{ maxNumber: bigint | number | null }>>`
+    SELECT MAX(CAST(orderNumber AS UNSIGNED)) AS maxNumber
+    FROM \`order\`
+    WHERE orderNumber REGEXP '^[0-9]+$'
+  `;
+  let next = Number(rows[0]?.maxNumber || 0) + 1;
 
   while (true) {
     const value = String(next).padStart(2, "0");

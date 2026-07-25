@@ -54,15 +54,15 @@ enum OrderAdjustmentType {
 }
 
 model AdminUser {
-  id             String              @id @default(cuid())
-  email          String              @unique
-  passwordHash   String
-  name           String
-  isActive       Boolean             @default(true)
-  reviewedProofs SinpePaymentProof[] @relation("ProofReviewer")
+  id                String              @id @default(cuid())
+  email             String              @unique
+  passwordHash      String
+  name              String
+  isActive          Boolean             @default(true)
+  reviewedProofs    SinpePaymentProof[] @relation("ProofReviewer")
   pushSubscriptions PushSubscription[]
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   @@map("adminuser")
 }
@@ -112,32 +112,32 @@ model Category {
 }
 
 model Product {
-  id                   String          @id @default(cuid())
+  id                   String             @id @default(cuid())
   categoryId           String
-  category             Category        @relation(fields: [categoryId], references: [id])
+  category             Category           @relation(fields: [categoryId], references: [id])
   name                 String
-  slug                 String          @unique
-  description          String          @db.Text
-  imageUrl             String?         @db.Text
-  imagePath            String?         @db.Text
-  visibleIngredients   String?         @db.Text
-  estimatedDelivery    String          @default("24 a 48 horas")
-  isFeatured           Boolean         @default(false)
-  priceFinal           Decimal         @db.Decimal(10, 2)
-  isActive             Boolean         @default(true)
-  isAvailable          Boolean         @default(true)
+  slug                 String             @unique
+  description          String             @db.Text
+  imageUrl             String?            @db.Text
+  imagePath            String?            @db.Text
+  visibleIngredients   String?            @db.Text
+  estimatedDelivery    String             @default("24 a 48 horas")
+  isFeatured           Boolean            @default(false)
+  priceFinal           Decimal            @db.Decimal(10, 2)
+  isActive             Boolean            @default(true)
+  isAvailable          Boolean            @default(true)
   stockQuantity        Int?
-  suggestedPrice       Decimal?        @db.Decimal(10, 2)
-  desiredMarginPercent Decimal?        @db.Decimal(5, 2)
-  desiredProfitAmount  Decimal?        @db.Decimal(10, 2)
+  suggestedPrice       Decimal?           @db.Decimal(10, 2)
+  desiredMarginPercent Decimal?           @db.Decimal(5, 2)
+  desiredProfitAmount  Decimal?           @db.Decimal(10, 2)
   recipe               Recipe?
   costBatches          ProductCostBatch[]
   images               ProductImage[]
   orderItems           OrderItem[]
   promotions           Promotion[]
   ratings              ProductRating[]
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   @@index([categoryId])
   @@index([isActive, isAvailable])
@@ -278,26 +278,26 @@ model Promotion {
 }
 
 model Order {
-  id            String             @id @default(cuid())
-  orderNumber   String             @unique
+  id            String                @id @default(cuid())
+  orderNumber   String                @unique
   customerName  String
   customerPhone String
   customerEmail String?
   customerId    String?
-  customer      CustomerUser?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  deliveryNotes String?            @db.Text
-  subtotal      Decimal            @db.Decimal(10, 2)
-  discountTotal Decimal            @default(0) @db.Decimal(10, 2)
-  total         Decimal            @db.Decimal(10, 2)
+  customer      CustomerUser?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  deliveryNotes String?               @db.Text
+  subtotal      Decimal               @db.Decimal(10, 2)
+  discountTotal Decimal               @default(0) @db.Decimal(10, 2)
+  total         Decimal               @db.Decimal(10, 2)
   paymentMethod PaymentMethod
-  paymentStatus PaymentStatus      @default(PENDING)
-  orderStatus   OrderStatus        @default(NEW)
+  paymentStatus PaymentStatus         @default(PENDING)
+  orderStatus   OrderStatus           @default(NEW)
   items         OrderItem[]
   sinpeProof    SinpePaymentProof?
   adjustments   OrderAdjustment[]
   customRequest CustomDessertRequest?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   @@index([createdAt])
   @@index([paymentStatus])
@@ -319,15 +319,23 @@ model OrderAdjustment {
 }
 
 model SiteSettings {
-  id                 String   @id
-  heroImageUrl       String?  @db.Text
-  heroImagePath      String?  @db.Text
-  heroEyebrow        String   @default("Horneado por encargo")
-  heroTitle          String   @default("Horno Dulce")
-  heroDescription    String   @db.Text
-  heroNotice         String   @db.Text
-  refundPolicy       String   @db.Text
-  updatedAt          DateTime @updatedAt
+  id                    String   @id
+  heroImageUrl          String?  @db.Text
+  heroImagePath         String?  @db.Text
+  heroEyebrow           String   @default("Postres caseros en Liberia")
+  heroTitle             String   @default("El horno dulce")
+  heroDescription       String   @db.Text
+  heroNotice            String   @db.Text
+  aboutImageUrl         String?  @db.Text
+  aboutImagePath        String?  @db.Text
+  aboutEyebrow          String?  @db.VarChar(191)
+  aboutTitle            String?  @db.VarChar(191)
+  aboutDescription      String?  @db.Text
+  refundReviewText      String?  @db.Text
+  refundReplacementText String?  @db.Text
+  refundPartialText     String?  @db.Text
+  refundPolicy          String   @db.Text
+  updatedAt             DateTime @updatedAt
 
   @@map("sitesettings")
 }

@@ -1,11 +1,31 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { createContext, useActionState, useContext, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import type { ActionResult } from "@/actions/public";
+import { Button } from "@/components/ui/button";
 import { TimedMessage } from "@/components/ui/timed-message";
 
 const initialState: ActionResult = { ok: false, message: "" };
+const ApiFormPendingContext = createContext(false);
+
+export function ApiSubmitButton({
+  idleLabel,
+  pendingLabel,
+}: {
+  idleLabel: string;
+  pendingLabel: string;
+}) {
+  const pending = useContext(ApiFormPendingContext);
+
+  return (
+    <Button type="submit" disabled={pending} className="min-w-40">
+      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+      {pending ? pendingLabel : idleLabel}
+    </Button>
+  );
+}
 
 export function ActionStateForm({
   action,
@@ -42,40 +62,45 @@ export function ApiStateForm({
   const [state, setState] = useState<ActionResult>({ ok: false, message: "" });
 
   return (
-    <form
-      className={className}
-      onSubmit={async (event) => {
-        event.preventDefault();
-        if (pending) return;
+    <ApiFormPendingContext.Provider value={pending}>
+      <form
+        className={className}
+        aria-busy={pending}
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (pending) return;
 
-        const form = event.currentTarget;
-        setPending(true);
-        setState({ ok: true, message: "Guardando..." });
+          const form = event.currentTarget;
+          let redirecting = false;
+          setPending(true);
+          setState({ ok: false, message: "" });
 
-        try {
-          const response = await fetch(endpoint, {
-            method: "POST",
-            body: new FormData(form),
-          });
-          const result = (await response.json()) as ActionResult;
-          setState(result);
+          try {
+            const response = await fetch(endpoint, {
+              method: "POST",
+              body: new FormData(form),
+            });
+            const result = (await response.json()) as ActionResult;
+            setState(result);
 
-          if (result.ok && redirectTo) {
-            window.sessionStorage.setItem("adminFlash", JSON.stringify(result));
-            router.push(redirectTo);
-            router.refresh();
+            if (result.ok && redirectTo) {
+              redirecting = true;
+              window.sessionStorage.setItem("adminFlash", JSON.stringify(result));
+              router.push(redirectTo);
+              router.refresh();
+            }
+          } catch {
+            setState({ ok: false, message: "No se pudo completar la acción." });
+          } finally {
+            if (!redirecting) setPending(false);
           }
-        } catch {
-          setState({ ok: false, message: "No se pudo completar la acción." });
-        } finally {
-          setPending(false);
-        }
-      }}
-    >
-      <fieldset disabled={pending} className="contents">
-        {children}
-      </fieldset>
-      <TimedMessage message={state.message} ok={state.ok} messageKey={state} />
-    </form>
+        }}
+      >
+        <fieldset disabled={pending} className="contents">
+          {children}
+        </fieldset>
+        <TimedMessage message={state.message} ok={state.ok} messageKey={state} />
+      </form>
+    </ApiFormPendingContext.Provider>
   );
 }

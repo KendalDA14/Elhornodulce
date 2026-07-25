@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { CheckCircle2, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { CheckCircle2, Minus, Plus, ShoppingBag, ShoppingCart, Trash2 } from "lucide-react";
 import type { CartItem, PublicProduct } from "@/types/shop";
 import { currency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -33,11 +33,16 @@ type CartContextValue = {
   count: number;
 };
 
+type CartNotice = {
+  name: string;
+  imageUrl: string | null;
+};
+
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<CartNotice | null>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("horno-cart");
@@ -56,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!notice) return;
-    const timeout = window.setTimeout(() => setNotice(""), 3000);
+    const timeout = window.setTimeout(() => setNotice(null), 3000);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
@@ -69,7 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       total,
       count,
       addProduct(product, quantity = 1) {
-        setNotice(`${product.name} agregado al carrito`);
+        setNotice({ name: product.name, imageUrl: product.imageUrl });
         setItems((current) => {
           const existing = current.find((item) => item.productId === product.id);
           if (existing) {
@@ -118,9 +123,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider value={value}>
       {children}
       {notice ? (
-        <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-lg sm:left-auto sm:right-6 sm:translate-x-0">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          <span>{notice}</span>
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed bottom-20 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-lg border bg-background/95 p-2.5 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 sm:bottom-6 sm:left-auto sm:right-6 sm:w-auto sm:min-w-80 sm:translate-x-0"
+        >
+          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+            {notice.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={notice.imageUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <ShoppingBag className="m-3 h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{notice.name}</p>
+            <p className="text-xs text-muted-foreground">Agregado al carrito</p>
+          </div>
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
         </div>
       ) : null}
     </CartContext.Provider>
@@ -145,7 +169,7 @@ export function CartButton({ compact = false }: { compact?: boolean }) {
           className={cn("relative gap-2", compact && "h-9 w-9 rounded-full")}
           aria-label={compact ? `Abrir carrito, ${count} productos` : undefined}
         >
-          <ShoppingBag className="h-4 w-4" />
+          <ShoppingCart className="h-4 w-4" />
           {compact ? null : "Carrito"}
           <span
             className={cn(
@@ -229,7 +253,10 @@ export function CartButton({ compact = false }: { compact?: boolean }) {
             <span>{currency(total)}</span>
           </div>
           <Button asChild className="w-full">
-            <a href="/checkout">Ir a checkout</a>
+            <a href="/checkout">
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Ir a pagar
+            </a>
           </Button>
         </div>
       </SheetContent>

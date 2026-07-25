@@ -11,9 +11,9 @@ export type AdminPushPayload = {
 function pushConfig() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:admin@horno.local";
+  const subject = process.env.VAPID_SUBJECT;
 
-  if (!publicKey || !privateKey) return null;
+  if (!publicKey || !privateKey || !subject) return null;
   return { publicKey, privateKey, subject };
 }
 
@@ -68,6 +68,11 @@ async function deliverAdminPushNotification(notification: {
             },
           },
           message,
+          {
+            TTL: 60 * 60,
+            timeout: 5_000,
+            urgency: "high",
+          },
         );
       } catch (error) {
         const statusCode =
@@ -106,7 +111,7 @@ export async function sendAdminPushNotification(payload: AdminPushPayload) {
     },
   });
 
-  await deliverAdminPushNotification(notification).catch(() => undefined);
+  void deliverAdminPushNotification(notification).catch(() => undefined);
 }
 
 export async function flushPendingAdminPushNotifications() {

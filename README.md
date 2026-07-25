@@ -22,10 +22,10 @@ npm install
 DATABASE_URL="mysql://USUARIO:CONTRASENA@HOST:3306/NOMBRE_BD"
 ADMIN_SESSION_SECRET="secreto-aleatorio-de-al-menos-32-caracteres"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
-NEXT_PUBLIC_SINPE_NUMBER="7010 4855"
-NEXT_PUBLIC_SINPE_HOLDER="Anahi Quesada Zuniga"
+NEXT_PUBLIC_SINPE_NUMBER="0000 0000"
+NEXT_PUBLIC_SINPE_HOLDER="NOMBRE DEL TITULAR"
 NEXT_PUBLIC_SINPE_INSTRUCTIONS="Realiza el SINPE por el monto total y sube el comprobante o envíalo por WhatsApp."
-NEXT_PUBLIC_WHATSAPP_NUMBER="50670104855"
+NEXT_PUBLIC_WHATSAPP_NUMBER="50600000000"
 ```
 
 3. Genera Prisma y aplica las migraciones existentes:
@@ -61,6 +61,7 @@ npx tsc --noEmit     # Verificación de TypeScript
 npm run build        # Compilación de producción y Prisma
 npm run start        # Servidor de producción después del build
 npm run db:generate  # Regenerar el cliente Prisma
+npm run db:deploy    # Aplicar migraciones existentes
 npm run db:migrate   # Crear/aplicar una migración en desarrollo
 npm run db:studio    # Abrir Prisma Studio
 npm run seed:admin   # Crear o actualizar el administrador
@@ -158,3 +159,13 @@ npm run build
 ```
 
 Después del despliegue, comprueba el inicio, catálogo, carrito, checkout, registro, login, cuenta y las rutas principales del panel en escritorio y teléfono.
+
+## SEO e indexación
+
+- Define `NEXT_PUBLIC_SITE_URL` con el dominio público definitivo.
+- Las categorías activas con productos publicados generan páginas en `/categorias/[slug]`.
+- Los productos activos generan páginas en `/productos/[slug]`.
+- `sitemap.xml` se construye desde la base de datos de producción e incluye las categorías, productos e imágenes disponibles.
+- No es necesario crear categorías ni productos localmente para preparar el SEO.
+- Después de publicar, vuelve a enviar `https://tu-dominio.com/sitemap.xml` en Google Search Console y solicita la indexación del inicio, catálogo y páginas principales.
+- Conserva estables `/favicon.ico`, `/icon-96.png` e `/icon-192.png` para que Google pueda volver a procesar el icono del sitio.

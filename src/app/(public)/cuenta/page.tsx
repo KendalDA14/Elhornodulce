@@ -11,6 +11,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
+const orderStatusLabels: Record<string, string> = {
+  NEW: "Nuevo",
+  CONFIRMED: "Confirmado",
+  PREPARING: "En preparación",
+  READY: "Listo",
+  DELIVERED: "Entregado",
+  CANCELLED: "Cancelado",
+};
+
+const paymentStatusLabels: Record<string, string> = {
+  PENDING: "Pendiente",
+  PROOF_RECEIVED: "Comprobante recibido",
+  PAID: "Pagado",
+  REJECTED: "Rechazado",
+};
+
+const customRequestStatusLabels: Record<string, string> = {
+  NEW: "Nueva",
+  REVIEWED: "Revisada",
+  QUOTED: "Cotizada",
+  ACCEPTED: "Aceptada",
+  REJECTED: "Rechazada",
+};
+
 export default async function AccountPage() {
   const customer = await getCustomerSession();
 
@@ -61,9 +85,11 @@ export default async function AccountPage() {
                     <div>
                       <strong>Pedido #{order.orderNumber}</strong>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <Badge variant="outline">{order.orderStatus}</Badge>
+                        <Badge variant="outline">
+                          {orderStatusLabels[order.orderStatus] || order.orderStatus}
+                        </Badge>
                         <Badge variant={order.paymentStatus === "PAID" ? "default" : "secondary"}>
-                          Pago: {order.paymentStatus}
+                          Pago: {paymentStatusLabels[order.paymentStatus] || order.paymentStatus}
                         </Badge>
                       </div>
                     </div>
@@ -81,7 +107,8 @@ export default async function AccountPage() {
 
                   {order.customRequest ? (
                     <p className="mt-3 rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
-                      Pedido personalizado: {order.customRequest.status}
+                      Pedido personalizado:{" "}
+                      {customRequestStatusLabels[order.customRequest.status] || order.customRequest.status}
                       {order.customRequest.adminNotes ? ` - ${order.customRequest.adminNotes}` : ""}
                     </p>
                   ) : null}
@@ -92,7 +119,7 @@ export default async function AccountPage() {
                       {order.adjustments.map((adjustment) => (
                         <div key={adjustment.id} className="border-t pt-2 first:border-t-0 first:pt-0">
                           <div className="flex justify-between gap-3">
-                            <span>{adjustment.type === "REFUND" ? "Devolucion" : "Descuento compensatorio"}</span>
+                            <span>{adjustment.type === "REFUND" ? "Devolución" : "Descuento compensatorio"}</span>
                             <span>{currency(toNumber(adjustment.amount))}</span>
                           </div>
                           <p className="mt-1 text-muted-foreground">{adjustment.reason}</p>
@@ -103,7 +130,7 @@ export default async function AccountPage() {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">Aun no hay pedidos asociados a esta cuenta.</p>
+              <p className="text-sm text-muted-foreground">Aún no hay pedidos asociados a esta cuenta.</p>
             )}
           </CardContent>
         </Card>

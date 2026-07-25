@@ -1,5 +1,5 @@
 import { createPromotionAction, deletePromotionAction } from "@/actions/admin";
-import { getAdminLists } from "@/lib/data";
+import { getPromotionOptions } from "@/lib/data";
 import { getPrisma } from "@/lib/prisma";
 import { ActionStateForm } from "@/components/admin/action-state-form";
 import { InlineActionForm } from "@/components/admin/inline-action-form";
@@ -24,7 +24,7 @@ async function getPromotions() {
 }
 
 export default async function PromotionsPage() {
-  const [{ products, categories }, promotions] = await Promise.all([getAdminLists(), getPromotions()]);
+  const [{ products, categories }, promotions] = await Promise.all([getPromotionOptions(), getPromotions()]);
 
   return (
     <div className="space-y-6">
